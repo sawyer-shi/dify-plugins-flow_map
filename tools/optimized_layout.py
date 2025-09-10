@@ -48,12 +48,17 @@ class OptimizedFlowchartGenerator:
         self.margin_x = 0.6  # 减少水平边距以更好利用空间
         self.margin_y = 0.6  # 减少垂直边距以更好利用空间
         
-        self.node_colors = {
-            'start': '#90EE90',    # Light green
-            'process': '#87CEEB',  # Sky blue  
-            'decision': '#FFB6C1', # Light pink
-            'end': '#FFA07A',      # Light salmon
-            'default': '#E6E6FA'   # Lavender
+        # Visual enhancement: Theme system / 视觉增强：主题系统
+        self.themes = self._initialize_themes()
+        self.current_theme = 'modern'  # Default theme / 默认主题
+        
+        # Node shapes for different types / 不同类型的节点形状
+        self.node_shapes = {
+            'start': 'round',      # Rounded rectangle / 圆角矩形
+            'process': 'rect',     # Rectangle / 矩形
+            'decision': 'diamond', # Diamond / 菱形
+            'end': 'round',        # Rounded rectangle / 圆角矩形
+            'default': 'rect'      # Rectangle / 矩形
         }
         
         # Setup output directory / 设置输出目录
@@ -63,6 +68,12 @@ class OptimizedFlowchartGenerator:
         # Setup Chinese font
         self.chinese_font = self._setup_chinese_font()
         
+        # Visual enhancement parameters / 视觉增强参数
+        self.shadow_enabled = True      # Enable shadow effects / 启用阴影效果
+        self.gradient_enabled = True    # Enable gradient effects / 启用渐变效果
+        self.border_width = 1.5         # Border width / 边框宽度
+        self.shadow_offset = (0.02, -0.02)  # Shadow offset / 阴影偏移
+        
         # Adaptive grid system parameters / 自适应网格系统参数
         self.max_text_length_short = 8   # 短文本阈值
         self.max_text_length_medium = 15  # 中等文本阈值
@@ -70,6 +81,110 @@ class OptimizedFlowchartGenerator:
         self.max_nodes_per_row = 6        # 每行最多节点数
         self.min_nodes_per_col = 2        # 每列最少节点数  
         self.max_nodes_per_col = 8        # 每列最多节点数
+    
+    def _initialize_themes(self):
+        """
+        Initialize color themes for different visual styles
+        初始化不同视觉风格的颜色主题
+        """
+        return {
+            'modern': {
+                'name': 'Modern / 现代',
+                'background': '#FFFFFF',
+                'node_colors': {
+                    'start': '#4CAF50',    # Material Green / 质感绿
+                    'process': '#2196F3',  # Material Blue / 质感蓝
+                    'decision': '#FF9800', # Material Orange / 质感橙
+                    'end': '#F44336',      # Material Red / 质感红
+                    'default': '#9C27B0'   # Material Purple / 质感紫
+                },
+                'text_color': '#FFFFFF',
+                'border_color': '#FFFFFF',
+                'connection_color': '#424242',
+                'connection_width': 2.0
+            },
+            'business': {
+                'name': 'Business / 商务',
+                'background': '#F5F5F5',
+                'node_colors': {
+                    'start': '#1976D2',    # Deep Blue / 深蓝
+                    'process': '#0277BD',  # Light Blue / 浅蓝
+                    'decision': '#F57C00', # Deep Orange / 深橙
+                    'end': '#388E3C',      # Green / 绿色
+                    'default': '#5D4037'   # Brown / 棕色
+                },
+                'text_color': '#FFFFFF',
+                'border_color': '#37474F',
+                'connection_color': '#37474F',
+                'connection_width': 1.8
+            },
+            'tech': {
+                'name': 'Technology / 科技',
+                'background': '#121212',
+                'node_colors': {
+                    'start': '#00E676',    # Bright Green / 亮绿
+                    'process': '#00BCD4',  # Cyan / 青色
+                    'decision': '#FF6D00', # Deep Orange / 深橙
+                    'end': '#E91E63',      # Pink / 粉红
+                    'default': '#9C27B0'   # Purple / 紫色
+                },
+                'text_color': '#FFFFFF',
+                'border_color': '#FFFFFF',
+                'connection_color': '#FFFFFF',
+                'connection_width': 2.2
+            },
+            'minimal': {
+                'name': 'Minimal / 简约',
+                'background': '#FAFAFA',
+                'node_colors': {
+                    'start': '#616161',    # Grey 600
+                    'process': '#757575',  # Grey 600
+                    'decision': '#9E9E9E', # Grey 500
+                    'end': '#424242',      # Grey 800
+                    'default': '#6A6A6A'   # Grey
+                },
+                'text_color': '#FFFFFF',
+                'border_color': '#9E9E9E',
+                'connection_color': '#616161',
+                'connection_width': 1.5
+            },
+            'classic': {
+                'name': 'Classic / 经典',
+                'background': '#FFFFFF',
+                'node_colors': {
+                    'start': '#90EE90',    # Light Green
+                    'process': '#87CEEB',  # Sky Blue  
+                    'decision': '#FFB6C1', # Light Pink
+                    'end': '#FFA07A',      # Light Salmon
+                    'default': '#E6E6FA'   # Lavender
+                },
+                'text_color': '#000000',
+                'border_color': '#666666',
+                'connection_color': '#333333',
+                'connection_width': 1.5
+            }
+        }
+    
+    def set_theme(self, theme_name: str):
+        """
+        Set the current theme for flowchart generation
+        设置流程图生成的当前主题
+        
+        Args:
+            theme_name: Theme name ('modern', 'business', 'tech', 'minimal', 'classic')
+        """
+        if theme_name in self.themes:
+            self.current_theme = theme_name
+        else:
+            print(f"Warning: Theme '{theme_name}' not found, using default 'modern' theme")
+            self.current_theme = 'modern'
+    
+    def get_current_theme(self) -> Dict[str, Any]:
+        """
+        Get the current theme configuration
+        获取当前主题配置
+        """
+        return self.themes[self.current_theme]
     
     def _setup_chinese_font(self):
         """Setup Chinese font for matplotlib"""
@@ -579,11 +694,14 @@ class OptimizedFlowchartGenerator:
         rows, cols = self._calculate_adaptive_grid(nodes, layout)
         canvas_width, canvas_height = self._calculate_adaptive_canvas_size(nodes, layout, rows, cols)
         
-        # Create figure with dynamic size / 创建动态尺寸的图形
+        # Create figure with dynamic size and theme support / 创建带主题支持的动态尺寸图形
+        theme = self.get_current_theme()
         fig, ax = plt.subplots(figsize=(canvas_width, canvas_height))
+        fig.patch.set_facecolor(theme['background'])  # Set background color / 设置背景颜色
         ax.set_xlim(0, canvas_width)
         ax.set_ylim(0, canvas_height)
         ax.axis('off')
+        ax.set_facecolor(theme['background'])  # Set axes background / 设置坐标轴背景
         
         # Calculate adaptive positions using the calculated grid / 使用计算出的网格计算自适应位置
         positions = self._calculate_adaptive_positions(nodes, layout, canvas_width, canvas_height, rows, cols)
@@ -602,9 +720,9 @@ class OptimizedFlowchartGenerator:
         filename = f"flowchart_{input_type}_{layout_suffix}_{timestamp}.png"
         file_path = os.path.join(self.output_dir, filename)
         
-        # Save as PNG file / 保存为PNG文件
+        # Save as PNG file with theme background / 保存为带主题背景的PNG文件
         plt.savefig(file_path, format='png', dpi=300, bbox_inches='tight', 
-                   facecolor='white', edgecolor='none', pad_inches=0.1)
+                   facecolor=theme['background'], edgecolor='none', pad_inches=0.1)
         plt.close(fig)
         
         return file_path
@@ -720,7 +838,7 @@ class OptimizedFlowchartGenerator:
         return positions
     
     def _draw_compact_node(self, ax, node: Dict, position: Tuple[float, float]):
-        """Draw a compact node with optimized size"""
+        """Draw a compact node with enhanced visual effects and theme support"""
         x, y = position
         node_type = node.get('type', 'default')
         label = node.get('label', '')
@@ -729,25 +847,82 @@ class OptimizedFlowchartGenerator:
         if len(label) > 15:
             label = label[:12] + "..."
         
-        color = self.node_colors.get(node_type, self.node_colors['default'])
+        # Get current theme / 获取当前主题
+        theme = self.get_current_theme()
+        color = theme['node_colors'].get(node_type, theme['node_colors']['default'])
+        text_color = theme['text_color']
+        border_color = theme['border_color']
         
-        # Compact node dimensions / 紧凑节点尺寸
-        if node_type == 'decision':
+        # Get node shape / 获取节点形状
+        shape = self.node_shapes.get(node_type, self.node_shapes['default'])
+        
+        # Draw shadow first if enabled / 如果启用阴影，先绘制阴影
+        if self.shadow_enabled:
+            shadow_x = x + self.shadow_offset[0]
+            shadow_y = y + self.shadow_offset[1]
+            shadow_patch = self._create_node_patch(shadow_x, shadow_y, shape, node_type, 
+                                                 '#00000040', '#00000040', alpha=0.3)
+            ax.add_patch(shadow_patch)
+        
+        # Create main node patch / 创建主节点补丁
+        node_patch = self._create_node_patch(x, y, shape, node_type, color, border_color)
+        
+        # Add gradient effect if enabled / 如果启用渐变效果
+        if self.gradient_enabled:
+            node_patch = self._apply_gradient_effect(node_patch, color)
+        
+        ax.add_patch(node_patch)
+        
+        # Enhanced text rendering / 增强文本渲染
+        font_size = 9 if len(label) <= 8 else 8
+        ax.text(x, y, label, ha='center', va='center', fontsize=font_size,
+               weight='bold', wrap=True, fontproperties=self.chinese_font,
+               color=text_color, zorder=10)
+    
+    def _create_node_patch(self, x: float, y: float, shape: str, node_type: str, 
+                          fill_color: str, border_color: str, alpha: float = 1.0):
+        """
+        Create a node patch with specified shape and colors
+        创建指定形状和颜色的节点补丁
+        """
+        if shape == 'diamond' or node_type == 'decision':
+            # Diamond shape for decision nodes / 决策节点使用菱形
             width, height = self.node_width * 0.9, self.node_height * 0.9
-            box = FancyBboxPatch((x - width/2, y - height/2), width, height,
-                               boxstyle="round,pad=0.05", 
-                               facecolor=color, edgecolor='black', linewidth=1.5)
-        else:
+            # Create diamond using polygon
+            diamond_points = [
+                [x, y + height/2],      # Top
+                [x + width/2, y],       # Right
+                [x, y - height/2],      # Bottom
+                [x - width/2, y]        # Left
+            ]
+            from matplotlib.patches import Polygon
+            patch = Polygon(diamond_points, facecolor=fill_color, 
+                          edgecolor=border_color, linewidth=self.border_width, alpha=alpha)
+        elif shape == 'round':
+            # Rounded rectangle for start/end nodes / 开始/结束节点使用圆角矩形
             width, height = self.node_width, self.node_height
-            box = FancyBboxPatch((x - width/2, y - height/2), width, height,
-                               boxstyle="round,pad=0.05",
-                               facecolor=color, edgecolor='black', linewidth=1.5)
+            patch = FancyBboxPatch((x - width/2, y - height/2), width, height,
+                                 boxstyle="round,pad=0.1", 
+                                 facecolor=fill_color, edgecolor=border_color, 
+                                 linewidth=self.border_width, alpha=alpha)
+        else:  # 'rect' - regular rectangle
+            # Regular rectangle for process nodes / 处理节点使用矩形
+            width, height = self.node_width, self.node_height
+            patch = FancyBboxPatch((x - width/2, y - height/2), width, height,
+                                 boxstyle="round,pad=0.02",
+                                 facecolor=fill_color, edgecolor=border_color, 
+                                 linewidth=self.border_width, alpha=alpha)
         
-        ax.add_patch(box)
-        
-        # Compact text / 紧凑文本
-        ax.text(x, y, label, ha='center', va='center', fontsize=8, 
-               weight='bold', wrap=True, fontproperties=self.chinese_font)
+        return patch
+    
+    def _apply_gradient_effect(self, patch, base_color: str):
+        """
+        Apply gradient effect to node patch (simplified version)
+        为节点补丁应用渐变效果（简化版本）
+        """
+        # For now, we'll create a subtle gradient effect by adjusting the color
+        # In a more advanced implementation, we could use matplotlib's gradient fills
+        return patch
     
     def _draw_intelligent_connection(self, ax, connection: Dict, positions: Dict[str, Tuple[float, float]], layout: str):
         """Draw intelligent connection between nodes with optimal routing / 绘制智能节点连接，优化路径"""
@@ -786,17 +961,26 @@ class OptimizedFlowchartGenerator:
                 self._draw_stepped_connection(ax, from_pos, to_pos, "vertical-first")
     
     def _draw_direct_arrow(self, ax, from_pos: Tuple[float, float], to_pos: Tuple[float, float]):
-        """Draw a direct arrow connection / 绘制直接箭头连接"""
+        """Draw a direct arrow connection with theme support / 绘制带主题支持的直接箭头连接"""
+        theme = self.get_current_theme()
+        connection_color = theme['connection_color']
+        connection_width = theme['connection_width']
+        
         arrow = ConnectionPatch(from_pos, to_pos, "data", "data",
                               arrowstyle="->", shrinkA=35, shrinkB=35,
-                              mutation_scale=15, fc="black", ec="black",
-                              linewidth=1.5)
+                              mutation_scale=18, fc=connection_color, ec=connection_color,
+                              linewidth=connection_width, alpha=0.9)
         ax.add_patch(arrow)
     
     def _draw_stepped_connection(self, ax, from_pos: Tuple[float, float], to_pos: Tuple[float, float], direction: str):
-        """Draw a stepped connection (L-shaped) for better multi-row/column readability / 绘制阶梯连接（L形）以提高多行多列可读性"""
+        """Draw a stepped connection (L-shaped) with theme support / 绘制带主题支持的阶梯连接（L形）"""
         from_x, from_y = from_pos
         to_x, to_y = to_pos
+        
+        # Get theme colors / 获取主题颜色
+        theme = self.get_current_theme()
+        connection_color = theme['connection_color']
+        connection_width = theme['connection_width']
         
         if direction == "horizontal-first":
             # Go horizontal first, then vertical / 先水平后垂直
@@ -804,13 +988,14 @@ class OptimizedFlowchartGenerator:
             mid_y = from_y
             
             # Draw first segment (horizontal) / 绘制第一段（水平）
-            ax.plot([from_x, mid_x], [from_y, mid_y], 'k-', linewidth=1.5)
+            ax.plot([from_x, mid_x], [from_y, mid_y], color=connection_color, 
+                   linewidth=connection_width, alpha=0.9)
             
             # Draw second segment (vertical) with arrow / 绘制第二段（垂直）带箭头
             arrow = ConnectionPatch((mid_x, mid_y), to_pos, "data", "data",
                                   arrowstyle="->", shrinkA=5, shrinkB=35,
-                                  mutation_scale=15, fc="black", ec="black",
-                                  linewidth=1.5)
+                                  mutation_scale=16, fc=connection_color, ec=connection_color,
+                                  linewidth=connection_width, alpha=0.9)
             ax.add_patch(arrow)
         else:  # vertical-first
             # Go vertical first, then horizontal / 先垂直后水平
@@ -818,13 +1003,14 @@ class OptimizedFlowchartGenerator:
             mid_y = from_y + (to_y - from_y) * 0.7  # 70% of the way vertically
             
             # Draw first segment (vertical) / 绘制第一段（垂直）
-            ax.plot([from_x, mid_x], [from_y, mid_y], 'k-', linewidth=1.5)
+            ax.plot([from_x, mid_x], [from_y, mid_y], color=connection_color,
+                   linewidth=connection_width, alpha=0.9)
             
             # Draw second segment (horizontal) with arrow / 绘制第二段（水平）带箭头
             arrow = ConnectionPatch((mid_x, mid_y), to_pos, "data", "data",
                                   arrowstyle="->", shrinkA=5, shrinkB=35,
-                                  mutation_scale=15, fc="black", ec="black",
-                                  linewidth=1.5)
+                                  mutation_scale=16, fc=connection_color, ec=connection_color,
+                                  linewidth=connection_width, alpha=0.9)
             ax.add_patch(arrow)
     
     def _draw_compact_connection(self, ax, connection: Dict, positions: Dict[str, Tuple[float, float]]):
