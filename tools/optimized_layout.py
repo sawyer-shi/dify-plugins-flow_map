@@ -36,17 +36,17 @@ class OptimizedFlowchartGenerator:
         # Compact figure size / 紧凑的图形尺寸
         self.fig_size = (10, 6)
         
-        # Compact node dimensions / 紧凑的节点尺寸
+        # Optimized node dimensions / 优化的节点尺寸
         self.node_width = 1.4
         self.node_height = 0.6
         
-        # Tight spacing / 紧密间距
-        self.horizontal_spacing = 1.8  # 节点间水平间距
-        self.vertical_spacing = 1.0    # 节点间垂直间距
+        # Intelligent spacing for multi-row/column layouts / 智能间距适配多行多列布局
+        self.horizontal_spacing = 2.2  # 节点间水平间距（增加以适应多行）
+        self.vertical_spacing = 1.4    # 节点间垂直间距（增加以适应多列）
         
-        # Canvas margins / 画布边距
-        self.margin_x = 0.8
-        self.margin_y = 0.5
+        # Optimized canvas margins / 优化的画布边距
+        self.margin_x = 0.6  # 减少水平边距以更好利用空间
+        self.margin_y = 0.6  # 减少垂直边距以更好利用空间
         
         self.node_colors = {
             'start': '#90EE90',    # Light green
@@ -326,17 +326,25 @@ class OptimizedFlowchartGenerator:
         if not nodes:
             raise ValueError("No nodes to generate flowchart")
         
-        # Calculate optimal canvas size based on node count / 根据节点数量计算最佳画布尺寸
+        # Calculate optimal canvas size with intelligent multi-row/column layout / 智能多行多列布局的画布尺寸计算
         node_count = len(nodes)
         
         if layout == "left-right":
-            # Compact horizontal layout / 紧凑水平布局
-            canvas_width = max(6, min(12, self.margin_x * 2 + node_count * self.horizontal_spacing))
-            canvas_height = max(3, 4)
+            # Intelligent horizontal layout with multi-row support / 智能水平布局支持多行
+            max_nodes_per_row = 4  # 每行最多4个节点，避免过度拉伸
+            rows = max(1, (node_count + max_nodes_per_row - 1) // max_nodes_per_row)  # 向上取整
+            cols = min(node_count, max_nodes_per_row)
+            
+            canvas_width = max(6, self.margin_x * 2 + cols * self.horizontal_spacing)
+            canvas_height = max(4, self.margin_y * 2 + rows * (self.node_height + self.vertical_spacing))
         else:
-            # Compact vertical layout / 紧凑垂直布局  
-            canvas_width = max(4, 6)
-            canvas_height = max(4, min(10, self.margin_y * 2 + node_count * self.vertical_spacing))
+            # Intelligent vertical layout with multi-column support / 智能垂直布局支持多列
+            max_nodes_per_col = 5  # 每列最多5个节点，避免过度拉伸
+            cols = max(1, (node_count + max_nodes_per_col - 1) // max_nodes_per_col)  # 向上取整
+            rows = min(node_count, max_nodes_per_col)
+            
+            canvas_width = max(6, self.margin_x * 2 + cols * (self.node_width + self.horizontal_spacing))
+            canvas_height = max(6, self.margin_y * 2 + rows * self.vertical_spacing)
         
         # Create figure with dynamic size / 创建动态尺寸的图形
         fig, ax = plt.subplots(figsize=(canvas_width, canvas_height))
@@ -344,16 +352,25 @@ class OptimizedFlowchartGenerator:
         ax.set_ylim(0, canvas_height)
         ax.axis('off')
         
-        # Calculate compact positions / 计算紧凑位置
-        positions = self._calculate_compact_positions(nodes, layout, canvas_width, canvas_height)
+        # Calculate intelligent multi-row/column positions / 计算智能多行多列位置
+        if layout == "left-right":
+            max_nodes_per_row = 4
+            rows = max(1, (node_count + max_nodes_per_row - 1) // max_nodes_per_row)
+            cols = min(node_count, max_nodes_per_row)
+        else:
+            max_nodes_per_col = 5
+            cols = max(1, (node_count + max_nodes_per_col - 1) // max_nodes_per_col)
+            rows = min(node_count, max_nodes_per_col)
+        
+        positions = self._calculate_intelligent_positions(nodes, layout, canvas_width, canvas_height, rows, cols)
         
         # Draw nodes / 绘制节点
         for node in nodes:
             self._draw_compact_node(ax, node, positions[node['id']])
         
-        # Draw connections / 绘制连接
+        # Draw intelligent connections / 绘制智能连接
         for connection in connections:
-            self._draw_compact_connection(ax, connection, positions)
+            self._draw_intelligent_connection(ax, connection, positions, layout)
         
         # Generate unique filename / 生成唯一文件名
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -368,8 +385,71 @@ class OptimizedFlowchartGenerator:
         
         return file_path
     
+    def _calculate_intelligent_positions(self, nodes: List[Dict], layout: str, canvas_width: float, canvas_height: float, rows: int, cols: int) -> Dict[str, Tuple[float, float]]:
+        """Calculate intelligent multi-row/column positions to maximize space utilization / 计算智能多行多列位置以最大化空间利用"""
+        positions = {}
+        node_count = len(nodes)
+        
+        if layout == "left-right":
+            # Multi-row horizontal layout / 多行水平布局
+            # Calculate available space for nodes / 计算节点可用空间
+            available_width = canvas_width - 2 * self.margin_x
+            available_height = canvas_height - 2 * self.margin_y
+            
+            # Calculate spacing between nodes / 计算节点间距
+            if cols > 1:
+                x_spacing = available_width / cols
+            else:
+                x_spacing = available_width
+                
+            if rows > 1:
+                y_spacing = available_height / rows
+            else:
+                y_spacing = available_height
+            
+            # Position nodes in grid layout / 网格布局放置节点
+            for i, node in enumerate(nodes):
+                row = i // cols  # 当前行
+                col = i % cols   # 当前列
+                
+                # Calculate position / 计算位置
+                x = self.margin_x + x_spacing * (col + 0.5)
+                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                
+                positions[node['id']] = (x, y)
+        
+        else:  # top-bottom
+            # Multi-column vertical layout / 多列垂直布局
+            # Calculate available space for nodes / 计算节点可用空间
+            available_width = canvas_width - 2 * self.margin_x
+            available_height = canvas_height - 2 * self.margin_y
+            
+            # Calculate spacing between nodes / 计算节点间距
+            if cols > 1:
+                x_spacing = available_width / cols
+            else:
+                x_spacing = available_width
+                
+            if rows > 1:
+                y_spacing = available_height / rows
+            else:
+                y_spacing = available_height
+            
+            # Position nodes in grid layout / 网格布局放置节点
+            for i, node in enumerate(nodes):
+                col = i // rows  # 当前列
+                row = i % rows   # 当前行
+                
+                # Calculate position / 计算位置
+                x = self.margin_x + x_spacing * (col + 0.5)
+                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                
+                positions[node['id']] = (x, y)
+        
+        return positions
+    
     def _calculate_compact_positions(self, nodes: List[Dict], layout: str, canvas_width: float, canvas_height: float) -> Dict[str, Tuple[float, float]]:
-        """Calculate compact node positions to maximize space utilization"""
+        """Legacy compact position calculation (kept for compatibility) / 传统紧凑位置计算（保持兼容性）"""
         positions = {}
         node_count = len(nodes)
         
@@ -445,8 +525,86 @@ class OptimizedFlowchartGenerator:
         ax.text(x, y, label, ha='center', va='center', fontsize=8, 
                weight='bold', wrap=True, fontproperties=self.chinese_font)
     
+    def _draw_intelligent_connection(self, ax, connection: Dict, positions: Dict[str, Tuple[float, float]], layout: str):
+        """Draw intelligent connection between nodes with optimal routing / 绘制智能节点连接，优化路径"""
+        from_id = connection['from']
+        to_id = connection['to']
+        
+        if from_id not in positions or to_id not in positions:
+            return
+        
+        from_pos = positions[from_id]
+        to_pos = positions[to_id]
+        
+        # Calculate connection points based on node positions / 根据节点位置计算连接点
+        from_x, from_y = from_pos
+        to_x, to_y = to_pos
+        
+        # Determine optimal connection style based on layout and positions / 根据布局和位置确定最佳连接样式
+        dx = to_x - from_x
+        dy = to_y - from_y
+        
+        if layout == "left-right":
+            # For left-right layout, prefer horizontal flow / 左右布局优先水平流向
+            if abs(dx) > abs(dy):  # Mostly horizontal
+                # Direct horizontal connection / 直接水平连接
+                self._draw_direct_arrow(ax, from_pos, to_pos)
+            else:  # Mostly vertical (multi-row case)
+                # Draw stepped connection for better readability / 绘制阶梯连接以提高可读性
+                self._draw_stepped_connection(ax, from_pos, to_pos, "horizontal-first")
+        else:  # top-bottom
+            # For top-bottom layout, prefer vertical flow / 上下布局优先垂直流向
+            if abs(dy) > abs(dx):  # Mostly vertical
+                # Direct vertical connection / 直接垂直连接
+                self._draw_direct_arrow(ax, from_pos, to_pos)
+            else:  # Mostly horizontal (multi-column case)
+                # Draw stepped connection for better readability / 绘制阶梯连接以提高可读性
+                self._draw_stepped_connection(ax, from_pos, to_pos, "vertical-first")
+    
+    def _draw_direct_arrow(self, ax, from_pos: Tuple[float, float], to_pos: Tuple[float, float]):
+        """Draw a direct arrow connection / 绘制直接箭头连接"""
+        arrow = ConnectionPatch(from_pos, to_pos, "data", "data",
+                              arrowstyle="->", shrinkA=35, shrinkB=35,
+                              mutation_scale=15, fc="black", ec="black",
+                              linewidth=1.5)
+        ax.add_patch(arrow)
+    
+    def _draw_stepped_connection(self, ax, from_pos: Tuple[float, float], to_pos: Tuple[float, float], direction: str):
+        """Draw a stepped connection (L-shaped) for better multi-row/column readability / 绘制阶梯连接（L形）以提高多行多列可读性"""
+        from_x, from_y = from_pos
+        to_x, to_y = to_pos
+        
+        if direction == "horizontal-first":
+            # Go horizontal first, then vertical / 先水平后垂直
+            mid_x = from_x + (to_x - from_x) * 0.7  # 70% of the way horizontally
+            mid_y = from_y
+            
+            # Draw first segment (horizontal) / 绘制第一段（水平）
+            ax.plot([from_x, mid_x], [from_y, mid_y], 'k-', linewidth=1.5)
+            
+            # Draw second segment (vertical) with arrow / 绘制第二段（垂直）带箭头
+            arrow = ConnectionPatch((mid_x, mid_y), to_pos, "data", "data",
+                                  arrowstyle="->", shrinkA=5, shrinkB=35,
+                                  mutation_scale=15, fc="black", ec="black",
+                                  linewidth=1.5)
+            ax.add_patch(arrow)
+        else:  # vertical-first
+            # Go vertical first, then horizontal / 先垂直后水平
+            mid_x = from_x
+            mid_y = from_y + (to_y - from_y) * 0.7  # 70% of the way vertically
+            
+            # Draw first segment (vertical) / 绘制第一段（垂直）
+            ax.plot([from_x, mid_x], [from_y, mid_y], 'k-', linewidth=1.5)
+            
+            # Draw second segment (horizontal) with arrow / 绘制第二段（水平）带箭头
+            arrow = ConnectionPatch((mid_x, mid_y), to_pos, "data", "data",
+                                  arrowstyle="->", shrinkA=5, shrinkB=35,
+                                  mutation_scale=15, fc="black", ec="black",
+                                  linewidth=1.5)
+            ax.add_patch(arrow)
+    
     def _draw_compact_connection(self, ax, connection: Dict, positions: Dict[str, Tuple[float, float]]):
-        """Draw compact connection between nodes"""
+        """Legacy compact connection drawing (kept for compatibility) / 传统紧凑连接绘制（保持兼容性）"""
         from_id = connection['from']
         to_id = connection['to']
         
