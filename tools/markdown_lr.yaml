@@ -1,0 +1,34 @@
+identity:
+  name: "markdown_lr"
+  author: "sawyer-shi"
+  label:
+    en_US: "Markdown → Left-Right"
+    zh_Hans: "Markdown → 左右布局"
+    pt_BR: "Markdown → Esquerda-Direita"
+    ja_JP: "Markdown → 左右レイアウト"
+description:
+  human:
+    en_US: "Generate left-right flowcharts from Markdown text with numbered or bullet lists."
+    zh_Hans: "从Markdown文本的编号列表或项目符号生成左右布局流程图。"
+    pt_BR: "Gere fluxogramas da esquerda para a direita a partir de texto Markdown com listas numeradas ou com marcadores."
+    ja_JP: "番号付きリストまたは箇条書きリストを持つMarkdownテキストから左右レイアウトのフローチャートを生成。"
+  llm: "Generate horizontal (left-to-right) flowcharts from Markdown formatted text. Perfect for process flows and sequential steps."
+parameters:
+  - name: text
+    type: string
+    required: true
+    label:
+      en_US: Markdown Text
+      zh_Hans: Markdown文本
+      pt_BR: Texto Markdown
+      ja_JP: Markdownテキスト
+    human_description:
+      en_US: "Enter Markdown text with numbered lists (1. Step) or bullet points (- Step) for horizontal flowchart"
+      zh_Hans: "输入包含编号列表（1. 步骤）或项目符号（- 步骤）的Markdown文本生成水平流程图"
+      pt_BR: "Insira texto Markdown com listas numeradas (1. Passo) ou marcadores (- Passo) para fluxograma horizontal"
+      ja_JP: "水平フローチャート用の番号付きリスト（1. ステップ）または箇条書き（- ステップ）を含むMarkdownテキストを入力"
+    llm_description: "Markdown text with numbered lists or bullet points that will be arranged horizontally from left to right"
+    form: llm
+extra:
+  python:
+    source: tools/markdown_lr.py

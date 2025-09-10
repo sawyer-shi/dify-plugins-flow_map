@@ -1,0 +1,9 @@
+dify_plugin>=0.2.0,<0.3.0
+
+# Flow chart generation dependencies / 流程图生成依赖
+pyflowchart>=0.3.1
+matplotlib>=3.5.0
+pillow>=9.0.0
+
+# Text processing / 文本处理
+regex>=2023.0.0

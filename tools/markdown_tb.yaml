@@ -1,0 +1,34 @@
+identity:
+  name: "markdown_tb"
+  author: "sawyer-shi"
+  label:
+    en_US: "Markdown → Top-Bottom"
+    zh_Hans: "Markdown → 上下布局"
+    pt_BR: "Markdown → Cima-Baixo"
+    ja_JP: "Markdown → 上下レイアウト"
+description:
+  human:
+    en_US: "Generate top-bottom flowcharts from Markdown text with numbered or bullet lists."
+    zh_Hans: "从Markdown文本的编号列表或项目符号生成上下布局流程图。"
+    pt_BR: "Gere fluxogramas de cima para baixo a partir de texto Markdown com listas numeradas ou com marcadores."
+    ja_JP: "番号付きリストまたは箇条書きリストを持つMarkdownテキストから上下レイアウトのフローチャートを生成。"
+  llm: "Generate vertical (top-to-bottom) flowcharts from Markdown formatted text. Ideal for decision trees and hierarchical processes."
+parameters:
+  - name: text
+    type: string
+    required: true
+    label:
+      en_US: Markdown Text
+      zh_Hans: Markdown文本
+      pt_BR: Texto Markdown
+      ja_JP: Markdownテキスト
+    human_description:
+      en_US: "Enter Markdown text with numbered lists (1. Step) or bullet points (- Step) for vertical flowchart"
+      zh_Hans: "输入包含编号列表（1. 步骤）或项目符号（- 步骤）的Markdown文本生成垂直流程图"
+      pt_BR: "Insira texto Markdown com listas numeradas (1. Passo) ou marcadores (- Passo) para fluxograma vertical"
+      ja_JP: "垂直フローチャート用の番号付きリスト（1. ステップ）または箇条書き（- ステップ）を含むMarkdownテキストを入力"
+    llm_description: "Markdown text with numbered lists or bullet points that will be arranged vertically from top to bottom"
+    form: llm
+extra:
+  python:
+    source: tools/markdown_tb.py

@@ -1,0 +1,34 @@
+identity:
+  name: "mermaid_tb"
+  author: "sawyer-shi"
+  label:
+    en_US: "Mermaid → Top-Bottom"
+    zh_Hans: "Mermaid → 上下布局"
+    pt_BR: "Mermaid → Cima-Baixo"
+    ja_JP: "Mermaid → 上下レイアウト"
+description:
+  human:
+    en_US: "Generate top-bottom flowcharts from Mermaid graph syntax with node connections."
+    zh_Hans: "从Mermaid图形语法生成上下布局流程图，支持节点连接。"
+    pt_BR: "Gere fluxogramas de cima para baixo a partir da sintaxe de gráfico Mermaid com conexões de nós."
+    ja_JP: "ノード接続を持つMermaidグラフ構文から上下レイアウトのフローチャートを生成。"
+  llm: "Generate vertical (top-to-bottom) flowcharts from Mermaid syntax. Perfect for decision trees and hierarchical structures."
+parameters:
+  - name: text
+    type: string
+    required: true
+    label:
+      en_US: Mermaid Syntax
+      zh_Hans: Mermaid语法
+      pt_BR: Sintaxe Mermaid
+      ja_JP: Mermaid構文
+    human_description:
+      en_US: "Enter Mermaid flowchart syntax (graph TD/LR) for vertical layout visualization"
+      zh_Hans: "输入Mermaid流程图语法（graph TD/LR）生成垂直布局可视化"
+      pt_BR: "Insira a sintaxe do fluxograma Mermaid (graph TD/LR) para visualização em layout vertical"
+      ja_JP: "垂直レイアウト表示用のMermaidフローチャート構文（graph TD/LR）を入力"
+    llm_description: "Mermaid flowchart syntax that will be rendered in vertical top-to-bottom layout regardless of graph direction"
+    form: llm
+extra:
+  python:
+    source: tools/mermaid_tb.py

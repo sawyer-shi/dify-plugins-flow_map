@@ -1,0 +1,42 @@
+version: 0.0.1
+type: plugin
+author: sawyer-shi
+name: flow_map
+label:
+  en_US: "Flow Map Generator"
+  zh_Hans: "流程图生成器"
+  pt_BR: "Gerador de Fluxograma"
+  ja_JP: "フローマップジェネレーター"
+description:
+  en_US: Convert Markdown or Mermaid to flowcharts locally, supporting left-right and top-bottom layout directions.
+  ja_JP: MarkdownまたはMermaidをローカルでフローチャートに変換し、左右および上下のレイアウト方向をサポート。
+  zh_Hans: 在本地将Markdown或Mermaid转换为流程图，支持左右流向和上下流向布局。
+  pt_BR: Converta Markdown ou Mermaid em fluxogramas localmente, suportando direções de layout esquerda-direita e cima-baixo.
+icon: icon.png
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    app:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/flow_map.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 0.0.1
+created_at: 2025-09-10T10:39:22.5229354+08:00
+privacy: PRIVACY.md
+repo: https://github.com/sawyer-shi/dify-plugins-flow_map
+verified: false
