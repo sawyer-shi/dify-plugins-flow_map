@@ -62,6 +62,14 @@ class OptimizedFlowchartGenerator:
         
         # Setup Chinese font
         self.chinese_font = self._setup_chinese_font()
+        
+        # Adaptive grid system parameters / 自适应网格系统参数
+        self.max_text_length_short = 8   # 短文本阈值
+        self.max_text_length_medium = 15  # 中等文本阈值
+        self.min_nodes_per_row = 2        # 每行最少节点数
+        self.max_nodes_per_row = 6        # 每行最多节点数
+        self.min_nodes_per_col = 2        # 每列最少节点数  
+        self.max_nodes_per_col = 8        # 每列最多节点数
     
     def _setup_chinese_font(self):
         """Setup Chinese font for matplotlib"""
@@ -321,30 +329,255 @@ class OptimizedFlowchartGenerator:
             return ''
         return re.sub(r'^[\[\{\(]|[\]\}\)]$', '', shape)
     
+    def _analyze_text_characteristics(self, nodes: List[Dict]) -> Dict[str, Any]:
+        """Analyze text characteristics of nodes for adaptive layout / 分析节点文本特征以实现自适应布局"""
+        if not nodes:
+            return {
+                "avg_text_length": 0,
+                "max_text_length": 0,
+                "text_complexity": "simple",
+                "has_long_text": False,
+                "text_distribution": "uniform"
+            }
+        
+        # Calculate text lengths / 计算文本长度
+        text_lengths = []
+        for node in nodes:
+            label = node.get('label', '')
+            # Count characters, treating Chinese characters properly / 正确计算中文字符
+            length = len(label)
+            text_lengths.append(length)
+        
+        avg_length = sum(text_lengths) / len(text_lengths) if text_lengths else 0
+        max_length = max(text_lengths) if text_lengths else 0
+        min_length = min(text_lengths) if text_lengths else 0
+        
+        # Determine text complexity / 确定文本复杂度
+        if avg_length <= self.max_text_length_short:
+            complexity = "simple"
+        elif avg_length <= self.max_text_length_medium:
+            complexity = "medium"
+        else:
+            complexity = "complex"
+        
+        # Check for long text nodes / 检查长文本节点
+        has_long_text = any(length > self.max_text_length_medium for length in text_lengths)
+        
+        # Analyze text distribution / 分析文本分布
+        length_variance = sum((l - avg_length) ** 2 for l in text_lengths) / len(text_lengths)
+        if length_variance < 2:
+            distribution = "uniform"
+        elif length_variance < 10:
+            distribution = "varied"
+        else:
+            distribution = "mixed"
+        
+        return {
+            "avg_text_length": avg_length,
+            "max_text_length": max_length,
+            "min_text_length": min_length,
+            "text_complexity": complexity,
+            "has_long_text": has_long_text,
+            "text_distribution": distribution,
+            "length_variance": length_variance,
+            "text_lengths": text_lengths
+        }
+    
+    def _calculate_adaptive_grid(self, nodes: List[Dict], layout: str) -> Tuple[int, int]:
+        """Calculate adaptive grid dimensions based on content analysis / 基于内容分析计算自适应网格尺寸"""
+        node_count = len(nodes)
+        text_analysis = self._analyze_text_characteristics(nodes)
+        
+        if layout == "left-right":
+            # Adaptive horizontal layout / 自适应水平布局
+            base_nodes_per_row = 4  # 基础每行节点数
+            
+            # Adjust based on text complexity / 根据文本复杂度调整
+            if text_analysis["text_complexity"] == "simple":
+                nodes_per_row = min(self.max_nodes_per_row, base_nodes_per_row + 1)  # 简单文本可以多放
+            elif text_analysis["text_complexity"] == "complex":
+                nodes_per_row = max(self.min_nodes_per_row, base_nodes_per_row - 1)  # 复杂文本少放
+            else:
+                nodes_per_row = base_nodes_per_row
+            
+            # Adjust for long text / 针对长文本调整
+            if text_analysis["has_long_text"]:
+                nodes_per_row = max(self.min_nodes_per_row, nodes_per_row - 1)
+            
+            # Adjust for text distribution / 根据文本分布调整
+            if text_analysis["text_distribution"] == "mixed":
+                nodes_per_row = max(self.min_nodes_per_row, nodes_per_row - 1)
+            
+            # Calculate rows and columns / 计算行列数
+            nodes_per_row = max(self.min_nodes_per_row, min(self.max_nodes_per_row, nodes_per_row))
+            rows = max(1, (node_count + nodes_per_row - 1) // nodes_per_row)
+            cols = min(node_count, nodes_per_row)
+            
+        else:  # top-bottom
+            # Adaptive vertical layout / 自适应垂直布局
+            base_nodes_per_col = 5  # 基础每列节点数
+            
+            # Adjust based on text complexity / 根据文本复杂度调整
+            if text_analysis["text_complexity"] == "simple":
+                nodes_per_col = min(self.max_nodes_per_col, base_nodes_per_col + 2)  # 简单文本可以多放
+            elif text_analysis["text_complexity"] == "complex":
+                nodes_per_col = max(self.min_nodes_per_col, base_nodes_per_col - 1)  # 复杂文本少放
+            else:
+                nodes_per_col = base_nodes_per_col
+            
+            # Adjust for long text / 针对长文本调整
+            if text_analysis["has_long_text"]:
+                nodes_per_col = max(self.min_nodes_per_col, nodes_per_col - 1)
+            
+            # Adjust for text distribution / 根据文本分布调整
+            if text_analysis["text_distribution"] == "mixed":
+                nodes_per_col = max(self.min_nodes_per_col, nodes_per_col - 1)
+            
+            # Calculate rows and columns / 计算行列数
+            nodes_per_col = max(self.min_nodes_per_col, min(self.max_nodes_per_col, nodes_per_col))
+            cols = max(1, (node_count + nodes_per_col - 1) // nodes_per_col)
+            rows = min(node_count, nodes_per_col)
+        
+        return rows, cols
+    
+    def _calculate_adaptive_canvas_size(self, nodes: List[Dict], layout: str, rows: int, cols: int) -> Tuple[float, float]:
+        """Calculate adaptive canvas size based on content analysis / 基于内容分析计算自适应画布尺寸"""
+        text_analysis = self._analyze_text_characteristics(nodes)
+        
+        # Base spacing / 基础间距
+        base_h_spacing = self.horizontal_spacing
+        base_v_spacing = self.vertical_spacing
+        
+        # Adjust spacing based on text complexity / 根据文本复杂度调整间距
+        if text_analysis["text_complexity"] == "complex":
+            h_spacing = base_h_spacing * 1.2  # 复杂文本需要更多空间
+            v_spacing = base_v_spacing * 1.3
+        elif text_analysis["text_complexity"] == "simple":
+            h_spacing = base_h_spacing * 0.9  # 简单文本可以更紧凑
+            v_spacing = base_v_spacing * 0.9
+        else:
+            h_spacing = base_h_spacing
+            v_spacing = base_v_spacing
+        
+        # Adjust for long text / 针对长文本调整
+        if text_analysis["has_long_text"]:
+            h_spacing *= 1.15
+            v_spacing *= 1.1
+        
+        # Calculate canvas dimensions / 计算画布尺寸
+        if layout == "left-right":
+            canvas_width = max(6, self.margin_x * 2 + cols * h_spacing)
+            canvas_height = max(4, self.margin_y * 2 + rows * (self.node_height + v_spacing))
+        else:  # top-bottom
+            canvas_width = max(6, self.margin_x * 2 + cols * (self.node_width + h_spacing))
+            canvas_height = max(6, self.margin_y * 2 + rows * v_spacing)
+        
+        return canvas_width, canvas_height
+    
+    def _calculate_adaptive_positions(self, nodes: List[Dict], layout: str, canvas_width: float, canvas_height: float, rows: int, cols: int) -> Dict[str, Tuple[float, float]]:
+        """Calculate adaptive node positions with content-aware spacing / 计算内容感知的自适应节点位置"""
+        positions = {}
+        node_count = len(nodes)
+        text_analysis = self._analyze_text_characteristics(nodes)
+        
+        # Get adaptive spacing / 获取自适应间距
+        base_h_spacing = self.horizontal_spacing
+        base_v_spacing = self.vertical_spacing
+        
+        # Adjust spacing based on content / 根据内容调整间距
+        if text_analysis["text_complexity"] == "complex":
+            h_spacing_factor = 1.2
+            v_spacing_factor = 1.3
+        elif text_analysis["text_complexity"] == "simple":
+            h_spacing_factor = 0.9
+            v_spacing_factor = 0.9
+        else:
+            h_spacing_factor = 1.0
+            v_spacing_factor = 1.0
+        
+        if text_analysis["has_long_text"]:
+            h_spacing_factor *= 1.15
+            v_spacing_factor *= 1.1
+        
+        if layout == "left-right":
+            # Adaptive multi-row horizontal layout / 自适应多行水平布局
+            available_width = canvas_width - 2 * self.margin_x
+            available_height = canvas_height - 2 * self.margin_y
+            
+            # Calculate adaptive spacing / 计算自适应间距
+            if cols > 1:
+                x_spacing = (available_width / cols) * h_spacing_factor
+            else:
+                x_spacing = available_width
+                
+            if rows > 1:
+                y_spacing = (available_height / rows) * v_spacing_factor
+            else:
+                y_spacing = available_height
+            
+            # Position nodes with content-aware adjustments / 内容感知的节点定位
+            for i, node in enumerate(nodes):
+                row = i // cols
+                col = i % cols
+                
+                # Basic position / 基础位置
+                x = self.margin_x + x_spacing * (col + 0.5)
+                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                
+                # Fine-tune position based on text length / 根据文本长度微调位置
+                text_length = len(node.get('label', ''))
+                if text_length > text_analysis["avg_text_length"] * 1.5:
+                    # Give more space to long text nodes / 为长文本节点提供更多空间
+                    if col < cols - 1:  # Not the last column
+                        x += x_spacing * 0.1
+                
+                positions[node['id']] = (x, y)
+        
+        else:  # top-bottom
+            # Adaptive multi-column vertical layout / 自适应多列垂直布局
+            available_width = canvas_width - 2 * self.margin_x
+            available_height = canvas_height - 2 * self.margin_y
+            
+            # Calculate adaptive spacing / 计算自适应间距
+            if cols > 1:
+                x_spacing = (available_width / cols) * h_spacing_factor
+            else:
+                x_spacing = available_width
+                
+            if rows > 1:
+                y_spacing = (available_height / rows) * v_spacing_factor
+            else:
+                y_spacing = available_height
+            
+            # Position nodes with content-aware adjustments / 内容感知的节点定位
+            for i, node in enumerate(nodes):
+                col = i // rows
+                row = i % rows
+                
+                # Basic position / 基础位置
+                x = self.margin_x + x_spacing * (col + 0.5)
+                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                
+                # Fine-tune position based on text length / 根据文本长度微调位置
+                text_length = len(node.get('label', ''))
+                if text_length > text_analysis["avg_text_length"] * 1.5:
+                    # Give more space to long text nodes / 为长文本节点提供更多空间
+                    if row < rows - 1:  # Not the last row
+                        y -= y_spacing * 0.1
+                
+                positions[node['id']] = (x, y)
+        
+        return positions
+    
     def _generate_compact_flowchart(self, nodes: List[Dict], connections: List[Dict], layout: str, input_type: str) -> str:
         """Generate compact flowchart with optimized space usage and save as PNG file"""
         if not nodes:
             raise ValueError("No nodes to generate flowchart")
         
-        # Calculate optimal canvas size with intelligent multi-row/column layout / 智能多行多列布局的画布尺寸计算
+        # Calculate adaptive grid dimensions based on content analysis / 基于内容分析计算自适应网格尺寸
         node_count = len(nodes)
-        
-        if layout == "left-right":
-            # Intelligent horizontal layout with multi-row support / 智能水平布局支持多行
-            max_nodes_per_row = 4  # 每行最多4个节点，避免过度拉伸
-            rows = max(1, (node_count + max_nodes_per_row - 1) // max_nodes_per_row)  # 向上取整
-            cols = min(node_count, max_nodes_per_row)
-            
-            canvas_width = max(6, self.margin_x * 2 + cols * self.horizontal_spacing)
-            canvas_height = max(4, self.margin_y * 2 + rows * (self.node_height + self.vertical_spacing))
-        else:
-            # Intelligent vertical layout with multi-column support / 智能垂直布局支持多列
-            max_nodes_per_col = 5  # 每列最多5个节点，避免过度拉伸
-            cols = max(1, (node_count + max_nodes_per_col - 1) // max_nodes_per_col)  # 向上取整
-            rows = min(node_count, max_nodes_per_col)
-            
-            canvas_width = max(6, self.margin_x * 2 + cols * (self.node_width + self.horizontal_spacing))
-            canvas_height = max(6, self.margin_y * 2 + rows * self.vertical_spacing)
+        rows, cols = self._calculate_adaptive_grid(nodes, layout)
+        canvas_width, canvas_height = self._calculate_adaptive_canvas_size(nodes, layout, rows, cols)
         
         # Create figure with dynamic size / 创建动态尺寸的图形
         fig, ax = plt.subplots(figsize=(canvas_width, canvas_height))
@@ -352,17 +585,8 @@ class OptimizedFlowchartGenerator:
         ax.set_ylim(0, canvas_height)
         ax.axis('off')
         
-        # Calculate intelligent multi-row/column positions / 计算智能多行多列位置
-        if layout == "left-right":
-            max_nodes_per_row = 4
-            rows = max(1, (node_count + max_nodes_per_row - 1) // max_nodes_per_row)
-            cols = min(node_count, max_nodes_per_row)
-        else:
-            max_nodes_per_col = 5
-            cols = max(1, (node_count + max_nodes_per_col - 1) // max_nodes_per_col)
-            rows = min(node_count, max_nodes_per_col)
-        
-        positions = self._calculate_intelligent_positions(nodes, layout, canvas_width, canvas_height, rows, cols)
+        # Calculate adaptive positions using the calculated grid / 使用计算出的网格计算自适应位置
+        positions = self._calculate_adaptive_positions(nodes, layout, canvas_width, canvas_height, rows, cols)
         
         # Draw nodes / 绘制节点
         for node in nodes:
