@@ -29,6 +29,53 @@ parameters:
       ja_JP: "垂直フローチャート用の番号付きリスト（1. ステップ）または箇条書き（- ステップ）を含むMarkdownテキストを入力"
     llm_description: "Markdown text with numbered lists or bullet points that will be arranged vertically from top to bottom"
     form: llm
+  - name: theme
+    type: select
+    required: false
+    default: modern
+    label:
+      en_US: Visual Theme
+      zh_Hans: 视觉主题
+      pt_BR: Tema Visual
+      ja_JP: ビジュアルテーマ
+    human_description:
+      en_US: "Choose the visual theme for the flowchart. Different themes provide different color schemes and styling."
+      zh_Hans: "选择流程图的视觉主题。不同主题提供不同的配色方案和样式。"
+      pt_BR: "Escolha o tema visual para o fluxograma. Diferentes temas fornecem esquemas de cores e estilos diferentes."
+      ja_JP: "フローチャートのビジュアルテーマを選択してください。異なるテーマは異なる配色とスタイルを提供します。"
+    llm_description: "Visual theme selection for the flowchart appearance and color scheme"
+    form: form
+    options:
+      - value: modern
+        label:
+          en_US: Modern (Default)
+          zh_Hans: 现代风格（默认）
+          pt_BR: Moderno (Padrão)
+          ja_JP: モダン（デフォルト）
+      - value: classic
+        label:
+          en_US: Classic
+          zh_Hans: 经典风格
+          pt_BR: Clássico
+          ja_JP: クラシック
+      - value: business
+        label:
+          en_US: Business
+          zh_Hans: 商务风格
+          pt_BR: Negócios
+          ja_JP: ビジネス
+      - value: tech
+        label:
+          en_US: Technology
+          zh_Hans: 科技风格
+          pt_BR: Tecnologia
+          ja_JP: テクノロジー
+      - value: minimal
+        label:
+          en_US: Minimal
+          zh_Hans: 简约风格
+          pt_BR: Minimalista
+          ja_JP: ミニマル
 extra:
   python:
     source: tools/markdown_tb.py

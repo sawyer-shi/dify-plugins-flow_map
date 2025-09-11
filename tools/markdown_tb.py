@@ -33,6 +33,10 @@ class MarkdownTBTool(Tool):
         """
         try:
             text = tool_parameters.get('text', '')
+            theme = tool_parameters.get('theme', 'modern')
+            
+            # Set theme / 设置主题
+            self.generator.set_theme(theme)
             
             if not text.strip():
                 yield self.create_json_message({
