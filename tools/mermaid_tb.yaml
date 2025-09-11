@@ -2,10 +2,10 @@ identity:
   name: "mermaid_tb"
   author: "sawyer-shi"
   label:
-    en_US: "Mermaid → Top-Bottom"
-    zh_Hans: "Mermaid → 上下布局"
-    pt_BR: "Mermaid → Cima-Baixo"
-    ja_JP: "Mermaid → 上下レイアウト"
+    en_US: "Mermaid → Top-Bottom Flowchart"
+    zh_Hans: "Mermaid → 流程图上下布局"
+    pt_BR: "Mermaid → Fluxograma Cima-Baixo"
+    ja_JP: "Mermaid → 上下フローチャート"
 description:
   human:
     en_US: "Generate top-bottom flowcharts from Mermaid graph syntax with node connections."

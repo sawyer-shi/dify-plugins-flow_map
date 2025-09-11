@@ -2,10 +2,10 @@ identity:
   name: "markdown_lr"
   author: "sawyer-shi"
   label:
-    en_US: "Markdown → Left-Right"
-    zh_Hans: "Markdown → 左右布局"
-    pt_BR: "Markdown → Esquerda-Direita"
-    ja_JP: "Markdown → 左右レイアウト"
+    en_US: "Markdown → Left-Right Flowchart"
+    zh_Hans: "Markdown → 流程图左右布局"
+    pt_BR: "Markdown → Fluxograma Esquerda-Direita"
+    ja_JP: "Markdown → 左右フローチャート"
 description:
   human:
     en_US: "Generate left-right flowcharts from Markdown text with numbered or bullet lists."

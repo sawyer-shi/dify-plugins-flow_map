@@ -3,7 +3,7 @@ identity:
   name: "flow_map"
   label:
     en_US: "Flow Map Generator"
-    zh_Hans: "流程图生成器"
+    zh_Hans: "流程图"
     pt_BR: "Gerador de Fluxograma"
     ja_JP: "フローマップジェネレーター"
   description:
@@ -13,10 +13,10 @@ identity:
     ja_JP: "MarkdownまたはMermaidをローカルでフローチャートに変換し、左右および上下のレイアウト方向をサポート。"
   icon: "icon.png"
 tools:
-  - tools/markdown_lr.yaml
-  - tools/markdown_tb.yaml
   - tools/mermaid_lr.yaml
   - tools/mermaid_tb.yaml
+  - tools/markdown_lr.yaml
+  - tools/markdown_tb.yaml
 extra:
   python:
     source: provider/flow_map.py

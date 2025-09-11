@@ -2,10 +2,10 @@ identity:
   name: "markdown_tb"
   author: "sawyer-shi"
   label:
-    en_US: "Markdown → Top-Bottom"
-    zh_Hans: "Markdown → 上下布局"
-    pt_BR: "Markdown → Cima-Baixo"
-    ja_JP: "Markdown → 上下レイアウト"
+    en_US: "Markdown → Top-Bottom Flowchart"
+    zh_Hans: "Markdown → 流程图上下布局"
+    pt_BR: "Markdown → Fluxograma Cima-Baixo"
+    ja_JP: "Markdown → 上下フローチャート"
 description:
   human:
     en_US: "Generate top-bottom flowcharts from Markdown text with numbered or bullet lists."
