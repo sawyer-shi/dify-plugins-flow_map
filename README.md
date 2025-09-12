@@ -1,199 +1,437 @@
-# Flow Map Plugin for Dify
-## 流程图插件
+# FlowMap - Advanced Flowchart Generator Plugin for Dify
 
 **Author:** sawyer-shi  
+**Email:** sawyer36@foxmail.com  
 **Version:** 0.0.1  
-**Type:** plugin  
+**Type:** Dify Plugin  
+**Repository:** [GitHub](https://github.com/sawyer-shi/dify-plugins-flow_map)
 
-### Description | 描述
+### Version Information
 
-Convert Markdown or Mermaid to flowcharts locally, supporting left-right and top-bottom layout directions.
+- **Current Version**: v0.0.1
+- **Release Date**: 2025-09-12
+- **Compatibility**: Dify Plugin Framework
+- **Python Version**: 3.12+
 
-在本地将Markdown或Mermaid转换为流程图，支持左右流向和上下流向布局。
+#### Version History
+- **v0.0.1** (2025-09-12): Initial release with smart branch detection, colorful arrow labels, and advanced layout optimization
 
-### Features | 功能特性
+## Description
 
-- 🎨 **Multiple Layout Support** | **多种布局支持**
-  - Left-to-right layout | 左右布局
-  - Top-to-bottom layout | 上下布局
+A powerful flowchart generation plugin that converts Markdown and Mermaid syntax to beautiful, intelligent flowcharts with advanced layout optimization and branch-aware positioning.
+
+## ✨ Key Features
+
+- 🎨 **Intelligent Layout System**
+  - Smart branch detection and free layout for complex flowcharts
+  - Grid layout for linear processes
+  - Automatic canvas sizing to prevent element overflow
   
-- 📝 **Text Format Support** | **文本格式支持**
-  - Markdown syntax | Markdown语法
-  - Mermaid diagram syntax | Mermaid图表语法
+- 📐 **Multiple Layout Directions**
+  - Left-to-right layout (LR)
+  - Top-to-bottom layout (TB)
+  - Branch-aware positioning
   
-- 🔧 **Local Generation** | **本地生成**
-  - No external dependencies | 无外部依赖
-  - Fast processing | 快速处理
-  - Privacy-focused | 注重隐私
+- 🌈 **Colorful Arrow Labels**
+  - Intelligent color mapping based on label semantics
+  - Support for Chinese and English labels
+  - Customizable color themes
+  
+- 📝 **Dual Format Support**
+  - Full Mermaid syntax support with labeled arrows
+  - Markdown list conversion
+  - Automatic text type detection
+  
+- 🎭 **Rich Themes**
+  - Modern theme with gradient effects
+  - Business professional theme
+  - Classic minimalist theme
+  - Custom theme support
+  
+- 🔧 **Local Processing**
+  - No external API dependencies
+  - Fast generation with matplotlib
+  - Privacy-focused design
+  - High-quality PNG output
 
-### Installation | 安装
+## 🚀 Quick Start
 
-1. **Clone the repository | 克隆仓库**
-   ```bash
-   git clone https://github.com/sawyer-shi/dify-plugins-flow_map.git
-   cd flow_map
-   ```
+### Dify Plugin Installation
 
-2. **Activate virtual environment | 激活虚拟环境**
-   ```bash
-   # Windows PowerShell
-   .\flowmapvenv\Scripts\Activate.ps1
+1. **Download Plugin Package**
+   - Get `flow_map-0.0.1.difypkg` from releases
    
-   # Windows Command Prompt
-   .\flowmapvenv\Scripts\activate.bat
-   
-   # Linux/Mac
-   source flowmapvenv/bin/activate
-   ```
+2. **Install in Dify**
+   - Navigate to Plugin Management
+   - Upload the .difypkg file
+   - Enable FlowMap plugin
 
-3. **Install dependencies | 安装依赖**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Basic Usage Examples
 
-### Usage | 使用方法
-
-#### Basic Usage | 基本用法
-
-```python
-from tools.flow_map import FlowMapGenerator
-
-# Create flow map generator | 创建流程图生成器
-generator = FlowMapGenerator()
-
-# Generate from Markdown | 从Markdown生成
-markdown_text = """
-# Process Flow
-1. Start
-2. Process Data
-3. Make Decision
-4. End
-"""
-
-flowchart = generator.from_markdown(markdown_text, layout="left-right")
-```
-
-#### Mermaid Syntax | Mermaid语法
-
-```python
-# Generate from Mermaid | 从Mermaid生成
-mermaid_text = """
+**Simple Mermaid Flowchart**
+```mermaid
 graph TD
-    A[Start] --> B{Is it working?}
-    B -->|Yes| C[Great!]
-    B -->|No| D[Fix it]
-    D --> B
-    C --> E[End]
-"""
-
-flowchart = generator.from_mermaid(mermaid_text, layout="top-bottom")
+    A[Start] --> B[Process Data]
+    B --> C{Data Valid?}
+    C -->|Yes| D[Save Result]
+    C -->|No| E[Show Error]
+    D --> F[End]
+    E --> F
 ```
 
-### API Reference | API参考
-
-#### FlowMapGenerator Class
-
-##### Methods | 方法
-
-- `from_markdown(text: str, layout: str = "left-right") -> dict`
-  - Generate flowchart from Markdown text | 从Markdown文本生成流程图
-  - **Parameters | 参数:**
-    - `text`: Markdown formatted text | Markdown格式文本
-    - `layout`: Layout direction ("left-right" or "top-bottom") | 布局方向
-  - **Returns | 返回值:** Flowchart data dictionary | 流程图数据字典
-
-- `from_mermaid(text: str, layout: str = "top-bottom") -> dict`
-  - Generate flowchart from Mermaid syntax | 从Mermaid语法生成流程图
-  - **Parameters | 参数:**
-    - `text`: Mermaid formatted text | Mermaid格式文本
-    - `layout`: Layout direction | 布局方向
-  - **Returns | 返回值:** Flowchart data dictionary | 流程图数据字典
-
-### Configuration | 配置
-
-Environment variables can be configured in `.env` file:
-
-环境变量可在`.env`文件中配置：
-
-```env
-# Plugin Settings | 插件设置
-PLUGIN_NAME=flow_map
-PLUGIN_VERSION=0.0.1
-DEBUG=false
-
-# Flow Map Settings | 流程图设置
-MAX_NODES=100
-MAX_CONNECTIONS=200
-DEFAULT_LAYOUT=hierarchical
-
-# File Storage | 文件存储
-UPLOAD_FOLDER=./uploads
-MAX_FILE_SIZE=10485760
+**Branching Decision Flow**
+```mermaid
+graph TD
+    A[Prepare Application] --> B[Choose Bank and Card Type]
+    B --> C[Fill Application Form]
+    C --> D[Submit Application]
+    D --> E[Bank Review]
+    E --> F{Review Result}
+    F -->|Approved| G[Sign Contract]
+    F -->|Rejected| H[Notify Applicant]
+    G --> I[Receive Credit Card]
+    I --> J[Activate Card]
+    J --> K[Use Credit Card]
 ```
 
-### Development | 开发
+## 📚 API Reference
 
-#### Project Structure | 项目结构
+### Mermaid Left-Right Tool
+
+**Input Parameters:**
+- `text` (string, required): Mermaid syntax flowchart text
+- `theme` (string, optional): Theme name (modern/business/classic)
+
+**Output:**
+- Success: PNG image + text summary
+- Format: "Successfully generated left-right layout flowchart. File size: X.XXM. Contains X nodes and X connections."
+
+### Mermaid Top-Bottom Tool
+
+**Input Parameters:**
+- `text` (string, required): Mermaid syntax flowchart text
+- `theme` (string, optional): Theme name (modern/business/classic)
+
+**Output:**
+- Success: PNG image + text summary
+- Format: "Successfully generated top-bottom layout flowchart. File size: X.XXM. Contains X nodes and X connections."
+
+## 🛠️ Advanced Features
+
+### Smart Branch Detection
+
+The plugin automatically detects branching scenarios in your flowchart and switches layout algorithms:
+
+- **Linear Flow**: Uses grid layout for optimal alignment
+- **Branching Flow**: Uses free layout to prevent overlap
+
+### Colorful Arrow Labels
+
+Supports labeled arrows with intelligent color mapping:
+
+```mermaid
+F -->|Approved| G    # Green arrow for positive outcomes
+F -->|Rejected| H    # Red arrow for negative outcomes
+F -->|Pending| I     # Orange arrow for pending states
+```
+
+### Theme Customization
+
+Available themes with different visual styles:
+
+- **Modern**: Clean design with gradients
+- **Business**: Professional corporate style
+- **Classic**: Traditional minimalist look
+
+## 🔧 Development
+
+### Project Structure
 
 ```
 flow_map/
-├── app/                    # Main application | 主应用
-├── tools/                  # Tool implementations | 工具实现
-├── test/                   # Test cases | 测试用例
-├── provider/               # Provider configurations | 提供者配置
-├── _assets/                # Static assets | 静态资源
-├── manifest.yaml           # Plugin manifest | 插件清单
-├── requirements.txt        # Dependencies | 依赖
-├── main.py                # Entry point | 入口点
-└── README.md              # Documentation | 文档
+├── tools/                  # Core tools implementation
+│   ├── mermaid_lr.py      # Left-right layout tool
+│   ├── mermaid_tb.py      # Top-bottom layout tool
+│   └── optimized_layout.py # Advanced layout engine
+├── provider/              # Provider configurations
+├── test/                  # Comprehensive tests
+├── manifest.yaml          # Plugin manifest
+├── main.py               # Entry point
+└── README.md             # Documentation
 ```
 
-#### Running Tests | 运行测试
+### Building Plugin
 
 ```bash
-# Run all tests | 运行所有测试
-pytest test/
-
-# Run with coverage | 运行并显示覆盖率
-pytest test/ --cov=app --cov=tools
-```
-
-#### Building Plugin | 构建插件
-
-```bash
-# From project root directory | 从项目根目录执行
+# From project root directory
 .\dify-plugin-windows-amd64.exe plugin package .\flow_map
 
-# This will create flow_map-0.0.1.difypkg | 这将创建flow_map-0.0.1.difypkg文件
+# This will create flow_map-0.0.1.difypkg
 ```
 
-### Contributing | 贡献
+### Running Tests
 
-1. Fork the repository | Fork仓库
-2. Create a feature branch | 创建功能分支
-3. Make your changes | 进行更改
-4. Add tests | 添加测试
-5. Submit a pull request | 提交拉取请求
+```bash
+# Navigate to project directory
+cd flow_map
 
-### License | 许可证
+# Run specific tests
+python test/test_branch_optimization.py
+python test/test_free_layout.py
+python test/test_user_example_final.py
+```
 
-This project is licensed under the MIT License.
+## 🔍 Technical Details
 
-本项目采用MIT许可证。
+### Branch-Aware Layout Algorithm
 
-### Support | 支持
+- **Branch Detection**: Automatically identifies decision nodes with multiple outgoing connections
+- **Free Layout**: Hierarchical positioning based on connection levels
+- **Canvas Adaptation**: Dynamic canvas sizing (up to 2.5x node count)
+- **Collision Avoidance**: Smart spacing with 70% effective area usage
 
-If you encounter any issues or have questions, please:
+### Performance Optimization
 
-如果遇到问题或有疑问，请：
+- **Matplotlib Backend**: High-quality vector graphics
+- **Memory Efficient**: Local processing without external APIs
+- **Fast Rendering**: Optimized for complex flowcharts
 
-1. Check the documentation | 查看文档
-2. Search existing issues | 搜索现有问题
-3. Create a new issue | 创建新问题
+## 📄 License
 
-### Changelog | 更新日志
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-#### v0.0.1 (2025-09-10)
-- Initial release | 初始版本
-- Basic Markdown and Mermaid support | 基础Markdown和Mermaid支持
-- Left-right and top-bottom layouts | 左右和上下布局
+## 🤝 Support
+
+If you encounter any issues or have questions:
+
+1. 📖 Check the documentation
+2. 🔍 Search existing issues on GitHub
+3. 🆕 Create a new issue with detailed description
+4. 💬 Join our community discussions
+5. 📧 Email: sawyer36@foxmail.com
+
+## 🙏 Acknowledgments
+
+- Matplotlib team for the excellent plotting library
+- Mermaid.js community for inspiration
+- Dify platform for the plugin framework
+
+---
+
+# FlowMap - 高级流程图生成器插件
+
+**作者:** sawyer-shi  
+**邮箱:** sawyer36@foxmail.com  
+**版本:** 0.0.1  
+**类型:** Dify插件  
+**仓库:** [GitHub](https://github.com/sawyer-shi/dify-plugins-flow_map)
+
+### 版本信息
+
+- **当前版本**: v0.0.1
+- **发布日期**: 2025-09-12
+- **兼容性**: Dify插件框架
+- **Python版本**: 3.12+
+
+#### 版本历史
+- **v0.0.1** (2025-09-12): 初始发布版本，包含智能分支检测、彩色箭头标签和高级布局优化功能
+
+## 描述
+
+一个强大的流程图生成插件，将Markdown和Mermaid语法转换为美观、智能的流程图，具有高级布局优化和分支感知定位功能。
+
+## ✨ 核心功能
+
+- 🎨 **智能布局系统**
+  - 智能分支检测和复杂流程图自由布局
+  - 线性流程网格布局
+  - 自动画布尺寸防止元素溢出
+  
+- 📐 **多种布局方向**
+  - 左右布局
+  - 上下布局
+  - 分支感知定位
+  
+- 🌈 **彩色箭头标签**
+  - 基于标签语义的智能颜色映射
+  - 支持中英文标签
+  - 可定制颜色主题
+  
+- 📝 **双格式支持**
+  - 完整Mermaid语法支持，包含标签箭头
+  - Markdown列表转换
+  - 自动文本类型检测
+  
+- 🎭 **丰富主题**
+  - 现代渐变主题
+  - 商务专业主题
+  - 经典简约主题
+  - 自定义主题支持
+  
+- 🔧 **本地处理**
+  - 无外部API依赖
+  - matplotlib快速生成
+  - 注重隐私设计
+  - 高质量PNG输出
+
+## 🚀 快速开始
+
+### Dify插件安装
+
+1. **下载插件包**
+   - 从发布页面获取 `flow_map-0.0.1.difypkg`
+   
+2. **在Dify中安装**
+   - 进入插件管理
+   - 上传.difypkg文件
+   - 启用FlowMap插件
+
+### 基本使用示例
+
+**简单Mermaid流程图**
+```mermaid
+graph TD
+    A[开始] --> B[处理数据]
+    B --> C{数据有效?}
+    C -->|是| D[保存结果]
+    C -->|否| E[显示错误]
+    D --> F[结束]
+    E --> F
+```
+
+**分支决策流程**
+```mermaid
+graph TD
+    A[准备申请材料] --> B[选择银行和信用卡类型]
+    B --> C[填写申请表]
+    C --> D[提交申请材料]
+    D --> E[银行审核]
+    E --> F{审核结果}
+    F -->|通过| G[签署合同]
+    F -->|不通过| H[通知申请人]
+    G --> I[收到信用卡]
+    I --> J[激活信用卡]
+    J --> K[使用信用卡]
+```
+
+## 📚 API参考
+
+### Mermaid左右布局工具
+
+**输入参数:**
+- `text` (字符串，必需): Mermaid语法流程图文本
+- `theme` (字符串，可选): 主题名称 (modern/business/classic)
+
+**输出:**
+- 成功: PNG图像 + 文本摘要
+- 格式: "Successfully generated left-right layout flowchart. File size: X.XXM. Contains X nodes and X connections."
+
+### Mermaid上下布局工具
+
+**输入参数:**
+- `text` (字符串，必需): Mermaid语法流程图文本
+- `theme` (字符串，可选): 主题名称 (modern/business/classic)
+
+**输出:**
+- 成功: PNG图像 + 文本摘要
+- 格式: "Successfully generated top-bottom layout flowchart. File size: X.XXM. Contains X nodes and X connections."
+
+## 🛠️ 高级功能
+
+### 智能分支检测
+
+插件自动检测流程图中的分支场景并切换布局算法：
+
+- **线性流程**: 使用网格布局实现最优对齐
+- **分支流程**: 使用自由布局防止重叠
+
+### 彩色箭头标签
+
+支持带标签的箭头和智能颜色映射：
+
+```mermaid
+F -->|通过| G    # 正面结果使用绿色箭头
+F -->|不通过| H  # 负面结果使用红色箭头
+F -->|待定| I    # 待定状态使用橙色箭头
+```
+
+### 主题定制
+
+可用主题及不同视觉风格：
+
+- **现代**: 清洁的渐变设计
+- **商务**: 专业企业风格
+- **经典**: 传统简约外观
+
+## 🔧 开发
+
+### 项目结构
+
+```
+flow_map/
+├── tools/                  # 核心工具实现
+│   ├── mermaid_lr.py      # 左右布局工具
+│   ├── mermaid_tb.py      # 上下布局工具
+│   └── optimized_layout.py # 高级布局引擎
+├── provider/              # 提供者配置
+├── test/                  # 综合测试
+├── manifest.yaml          # 插件清单
+├── main.py               # 入口点
+└── README.md             # 文档
+```
+
+### 构建插件
+
+```bash
+# 从项目根目录执行
+.\dify-plugin-windows-amd64.exe plugin package .\flow_map
+
+# 这将创建 flow_map-0.0.1.difypkg 文件
+```
+
+### 运行测试
+
+```bash
+# 进入项目目录
+cd flow_map
+
+# 运行特定测试
+python test/test_branch_optimization.py
+python test/test_free_layout.py
+python test/test_user_example_final.py
+```
+
+## 🔍 技术细节
+
+### 分支感知布局算法
+
+- **分支检测**: 自动识别具有多个出向连接的决策节点
+- **自由布局**: 基于连接层级的分层定位
+- **画布适配**: 动态画布尺寸（最多2.5倍节点数）
+- **碰撞避免**: 70%有效区域使用率的智能间距
+
+### 性能优化
+
+- **Matplotlib后端**: 高质量矢量图形
+- **内存高效**: 本地处理无外部API
+- **快速渲染**: 为复杂流程图优化
+
+## 📄 许可证
+
+本项目采用MIT许可证 - 详见LICENSE文件。
+
+## 🤝 支持
+
+如果遇到问题或有疑问：
+
+1. 📖 查看文档
+2. 🔍 在GitHub上搜索现有问题
+3. 🆕 创建新问题并详细描述
+4. 💬 加入社区讨论
+5. 📧 邮箱: sawyer36@foxmail.com
+
+## 🙏 致谢
+
+- 感谢Matplotlib团队提供的优秀绘图库
+- 感谢Mermaid.js社区的启发
+- 感谢Dify平台提供的插件框架
