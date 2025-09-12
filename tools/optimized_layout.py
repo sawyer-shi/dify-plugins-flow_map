@@ -101,7 +101,21 @@ class OptimizedFlowchartGenerator:
                 'text_color': '#FFFFFF',
                 'border_color': '#FFFFFF',
                 'connection_color': '#424242',
-                'connection_width': 2.0
+                'connection_width': 2.0,
+                # 带标签箭头的颜色配置
+                'connection_label_colors': {
+                    '通过': '#4CAF50',    # 绿色 - 成功
+                    '是': '#4CAF50',        # 绿色 - 肯定
+                    '成功': '#4CAF50',      # 绿色 - 成功
+                    '正确': '#4CAF50',      # 绿色 - 正确
+                    '不通过': '#F44336',  # 红色 - 失败
+                    '否': '#F44336',        # 红色 - 否定
+                    '失败': '#F44336',      # 红色 - 失败
+                    '错误': '#F44336',      # 红色 - 错误
+                    '可能': '#FF9800',      # 橙色 - 不确定
+                    '待定': '#FF9800',      # 橙色 - 待定
+                    'default': '#424242'   # 默认颜色
+                }
             },
             'business': {
                 'name': 'Business / 商务',
@@ -116,7 +130,21 @@ class OptimizedFlowchartGenerator:
                 'text_color': '#FFFFFF',
                 'border_color': '#37474F',
                 'connection_color': '#37474F',
-                'connection_width': 1.8
+                'connection_width': 1.8,
+                # 带标签箭头的颜色配置
+                'connection_label_colors': {
+                    '通过': '#388E3C',    # 绿色 - 成功  
+                    '是': '#388E3C',        # 绿色 - 肯定
+                    '成功': '#388E3C',      # 绿色 - 成功
+                    '正确': '#388E3C',      # 绿色 - 正确
+                    '不通过': '#D32F2F',  # 红色 - 失败
+                    '否': '#D32F2F',        # 红色 - 否定
+                    '失败': '#D32F2F',      # 红色 - 失败
+                    '错误': '#D32F2F',      # 红色 - 错误
+                    '可能': '#F57C00',      # 橙色 - 不确定
+                    '待定': '#F57C00',      # 橙色 - 待定
+                    'default': '#37474F'   # 默认颜色
+                }
             },
             'tech': {
                 'name': 'Technology / 科技',
@@ -131,7 +159,21 @@ class OptimizedFlowchartGenerator:
                 'text_color': '#FFFFFF',
                 'border_color': '#FFFFFF',
                 'connection_color': '#FFFFFF',
-                'connection_width': 2.2
+                'connection_width': 2.2,
+                # 带标签箭头的颜色配置
+                'connection_label_colors': {
+                    '通过': '#00E676',    # 亮绿色 - 成功
+                    '是': '#00E676',        # 亮绿色 - 肯定
+                    '成功': '#00E676',      # 亮绿色 - 成功
+                    '正确': '#00E676',      # 亮绿色 - 正确
+                    '不通过': '#FF1744',  # 亮红色 - 失败
+                    '否': '#FF1744',        # 亮红色 - 否定
+                    '失败': '#FF1744',      # 亮红色 - 失败
+                    '错误': '#FF1744',      # 亮红色 - 错误
+                    '可能': '#FF6D00',      # 亮橙色 - 不确定
+                    '待定': '#FF6D00',      # 亮橙色 - 待定
+                    'default': '#FFFFFF'   # 默认颜色
+                }
             },
             'minimal': {
                 'name': 'Minimal / 简约',
@@ -146,7 +188,21 @@ class OptimizedFlowchartGenerator:
                 'text_color': '#FFFFFF',
                 'border_color': '#9E9E9E',
                 'connection_color': '#616161',
-                'connection_width': 1.5
+                'connection_width': 1.5,
+                # 带标签箭头的颜色配置
+                'connection_label_colors': {
+                    '通过': '#689F38',    # 深绿色 - 成功
+                    '是': '#689F38',        # 深绿色 - 肯定
+                    '成功': '#689F38',      # 深绿色 - 成功
+                    '正确': '#689F38',      # 深绿色 - 正确
+                    '不通过': '#C62828',  # 深红色 - 失败
+                    '否': '#C62828',        # 深红色 - 否定
+                    '失败': '#C62828',      # 深红色 - 失败
+                    '错误': '#C62828',      # 深红色 - 错误
+                    '可能': '#EF6C00',      # 深橙色 - 不确定
+                    '待定': '#EF6C00',      # 深橙色 - 待定
+                    'default': '#616161'   # 默认颜色
+                }
             },
             'classic': {
                 'name': 'Classic / 经典',
@@ -161,7 +217,21 @@ class OptimizedFlowchartGenerator:
                 'text_color': '#000000',
                 'border_color': '#666666',
                 'connection_color': '#333333',
-                'connection_width': 1.5
+                'connection_width': 1.5,
+                # 带标签箭头的颜色配置
+                'connection_label_colors': {
+                    '通过': '#4CAF50',    # 绿色 - 成功
+                    '是': '#4CAF50',        # 绿色 - 肯定
+                    '成功': '#4CAF50',      # 绿色 - 成功
+                    '正确': '#4CAF50',      # 绿色 - 正确
+                    '不通过': '#F44336',  # 红色 - 失败
+                    '否': '#F44336',        # 红色 - 否定
+                    '失败': '#F44336',      # 红色 - 失败
+                    '错误': '#F44336',      # 红色 - 错误
+                    '可能': '#FF9800',      # 橙色 - 不确定
+                    '待定': '#FF9800',      # 橙色 - 待定
+                    'default': '#333333'   # 默认颜色
+                }
             }
         }
     
@@ -185,6 +255,30 @@ class OptimizedFlowchartGenerator:
         获取当前主题配置
         """
         return self.themes[self.current_theme]
+    
+    def _get_connection_color(self, connection_label: str) -> str:
+        """
+        Get connection color based on label
+        根据标签获取连接颜色
+        """
+        theme = self.get_current_theme()
+        label_colors = theme.get('connection_label_colors', {})
+        
+        if not connection_label:
+            return theme['connection_color']
+        
+        # 检查精确匹配
+        if connection_label in label_colors:
+            return label_colors[connection_label]
+        
+        # 检查包含匹配（不区分大小写）
+        label_lower = connection_label.lower().strip()
+        for key, color in label_colors.items():
+            if key != 'default' and (key.lower() in label_lower or label_lower in key.lower()):
+                return color
+        
+        # 返回默认颜色
+        return label_colors.get('default', theme['connection_color'])
     
     def _setup_chinese_font(self):
         """Setup Chinese font for matplotlib"""
@@ -935,9 +1029,10 @@ class OptimizedFlowchartGenerator:
         return patch
     
     def _draw_intelligent_connection(self, ax, connection: Dict, positions: Dict[str, Tuple[float, float]], layout: str):
-        """Draw intelligent connection between nodes with optimal routing / 绘制智能节点连接，优化路径"""
+        """Draw intelligent connection between nodes with optimal routing and label-based coloring / 绘制智能节点连接，优化路径和基于标签的颜色"""
         from_id = connection['from']
         to_id = connection['to']
+        connection_label = connection.get('label', '')
         
         if from_id not in positions or to_id not in positions:
             return
@@ -957,23 +1052,27 @@ class OptimizedFlowchartGenerator:
             # For left-right layout, prefer horizontal flow / 左右布局优先水平流向
             if abs(dx) > abs(dy):  # Mostly horizontal
                 # Direct horizontal connection / 直接水平连接
-                self._draw_direct_arrow(ax, from_pos, to_pos)
+                self._draw_direct_arrow(ax, from_pos, to_pos, connection_label)
             else:  # Mostly vertical (multi-row case)
                 # Draw stepped connection for better readability / 绘制阶梯连接以提高可读性
-                self._draw_stepped_connection(ax, from_pos, to_pos, "horizontal-first")
+                self._draw_stepped_connection(ax, from_pos, to_pos, "horizontal-first", connection_label)
         else:  # top-bottom
             # For top-bottom layout, prefer vertical flow / 上下布局优先垂直流向
             if abs(dy) > abs(dx):  # Mostly vertical
                 # Direct vertical connection / 直接垂直连接
-                self._draw_direct_arrow(ax, from_pos, to_pos)
+                self._draw_direct_arrow(ax, from_pos, to_pos, connection_label)
             else:  # Mostly horizontal (multi-column case)
                 # Draw stepped connection for better readability / 绘制阶梯连接以提高可读性
-                self._draw_stepped_connection(ax, from_pos, to_pos, "vertical-first")
+                self._draw_stepped_connection(ax, from_pos, to_pos, "vertical-first", connection_label)
+        
+        # 如果有标签，在箭头中间绘制标签文本
+        if connection_label:
+            self._draw_connection_label(ax, from_pos, to_pos, connection_label)
     
-    def _draw_direct_arrow(self, ax, from_pos: Tuple[float, float], to_pos: Tuple[float, float]):
-        """Draw a direct arrow connection with theme support / 绘制带主题支持的直接箭头连接"""
+    def _draw_direct_arrow(self, ax, from_pos: Tuple[float, float], to_pos: Tuple[float, float], connection_label: str = ''):
+        """Draw a direct arrow connection with theme support and label-based coloring / 绘制带主题支持和标签颜色的直接箭头连接"""
         theme = self.get_current_theme()
-        connection_color = theme['connection_color']
+        connection_color = self._get_connection_color(connection_label)
         connection_width = theme['connection_width']
         
         arrow = ConnectionPatch(from_pos, to_pos, "data", "data",
@@ -982,14 +1081,14 @@ class OptimizedFlowchartGenerator:
                               linewidth=connection_width, alpha=0.9)
         ax.add_patch(arrow)
     
-    def _draw_stepped_connection(self, ax, from_pos: Tuple[float, float], to_pos: Tuple[float, float], direction: str):
-        """Draw a stepped connection (L-shaped) with theme support / 绘制带主题支持的阶梯连接（L形）"""
+    def _draw_stepped_connection(self, ax, from_pos: Tuple[float, float], to_pos: Tuple[float, float], direction: str, connection_label: str = ''):
+        """Draw a stepped connection (L-shaped) with theme support and label-based coloring / 绘制带主题支持和标签颜色的阶梯连接（L形）"""
         from_x, from_y = from_pos
         to_x, to_y = to_pos
         
         # Get theme colors / 获取主题颜色
         theme = self.get_current_theme()
-        connection_color = theme['connection_color']
+        connection_color = self._get_connection_color(connection_label)
         connection_width = theme['connection_width']
         
         if direction == "horizontal-first":
@@ -1022,6 +1121,38 @@ class OptimizedFlowchartGenerator:
                                   mutation_scale=16, fc=connection_color, ec=connection_color,
                                   linewidth=connection_width, alpha=0.9)
             ax.add_patch(arrow)
+    
+    def _draw_connection_label(self, ax, from_pos: Tuple[float, float], to_pos: Tuple[float, float], label: str):
+        """
+        Draw connection label at the middle of the arrow
+        在箭头中间绘制连接标签
+        """
+        if not label:
+            return
+        
+        # 计算标签位置（箭头中点）
+        mid_x = (from_pos[0] + to_pos[0]) / 2
+        mid_y = (from_pos[1] + to_pos[1]) / 2
+        
+        # 获取主题颜色
+        theme = self.get_current_theme()
+        label_color = self._get_connection_color(label)
+        
+        # 绘制标签背景（小圆角矩形）
+        label_bg = mpatches.FancyBboxPatch(
+            (mid_x - 0.25, mid_y - 0.1), 0.5, 0.2,
+            boxstyle="round,pad=0.05", 
+            facecolor=label_color, 
+            edgecolor=label_color,
+            alpha=0.9, 
+            zorder=8
+        )
+        ax.add_patch(label_bg)
+        
+        # 绘制标签文本
+        ax.text(mid_x, mid_y, label, ha='center', va='center', 
+               fontsize=7, weight='bold', color='white',
+               fontproperties=self.chinese_font, zorder=9)
     
     def _draw_compact_connection(self, ax, connection: Dict, positions: Dict[str, Tuple[float, float]]):
         """Legacy compact connection drawing (kept for compatibility) / 传统紧凑连接绘制（保持兼容性）"""

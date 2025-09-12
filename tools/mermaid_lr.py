@@ -7,6 +7,7 @@ Generate flowcharts from Mermaid syntax with left-right layout.
 从Mermaid语法生成左右布局的流程图。
 """
 
+import os
 from collections.abc import Generator
 from typing import Any
 
@@ -39,11 +40,9 @@ class MermaidLRTool(Tool):
             self.generator.set_theme(theme)
             
             if not text.strip():
-                yield self.create_json_message({
-                    "success": False,
-                    "error": "Input text is empty",
-                    "message": "Please provide Mermaid syntax to generate flowchart"
-                })
+                yield self.create_text_message(
+                    "Failed to generate flowchart: Input text is empty. Please provide Mermaid syntax to generate flowchart."
+                )
                 return
             
             # Force left-right layout / 强制使用左右布局
@@ -55,6 +54,16 @@ class MermaidLRTool(Tool):
                 with open(file_path, "rb") as f:
                     png_data = f.read()
                 
+                # Calculate file size in MB / 计算文件大小(以MB为单位)
+                file_size_bytes = len(png_data)
+                file_size_mb = file_size_bytes / (1024 * 1024)
+                
+                # Generate success message / 生成成功消息
+                success_text = f"Successfully generated left-right layout flowchart. File size: {file_size_mb:.2f}M. Contains {result.get('nodes_count', 0)} nodes and {result.get('connections_count', 0)} connections."
+                
+                # Return text message first / 先返回文本消息
+                yield self.create_text_message(success_text)
+                
                 # Return PNG file as blob with metadata / 返回PNG文件作为blob带元数据
                 yield self.create_blob_message(
                     png_data, 
@@ -64,12 +73,10 @@ class MermaidLRTool(Tool):
                     }
                 )
             else:
-                # Return error as JSON / 返回错误信息
-                yield self.create_json_message(result)
+                # Return error message / 返回错误信息
+                error_text = f"Failed to generate left-right flowchart: {result.get('error', 'Unknown error')}"
+                yield self.create_text_message(error_text)
             
         except Exception as e:
-            yield self.create_json_message({
-                "success": False,
-                "error": str(e),
-                "message": "Failed to generate left-right flowchart from Mermaid"
-            })
+            error_text = f"Failed to generate left-right flowchart from Mermaid: {str(e)}"
+            yield self.create_text_message(error_text)
