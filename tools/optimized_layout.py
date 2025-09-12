@@ -742,11 +742,17 @@ class OptimizedFlowchartGenerator:
         
         # Calculate canvas dimensions / 计算画布尺寸
         if layout == "left-right":
-            canvas_width = max(6, self.margin_x * 2 + cols * h_spacing)
-            canvas_height = max(4, self.margin_y * 2 + rows * (self.node_height + v_spacing))
+            # 保证水平布局有足够的宽度和高度
+            min_width = max(10, self.margin_x * 2 + cols * (self.node_width + h_spacing * 1.2))  # 增加间距系数
+            canvas_width = max(min_width, self.margin_x * 2 + cols * h_spacing)
+            canvas_height = max(8, self.margin_y * 2 + rows * (self.node_height + v_spacing) + 2)  # 额外缓冲
         else:  # top-bottom
-            canvas_width = max(6, self.margin_x * 2 + cols * (self.node_width + h_spacing))
-            canvas_height = max(6, self.margin_y * 2 + rows * v_spacing)
+            # 保证垂直布局有足够的宽度和高度
+            canvas_width = max(10, self.margin_x * 2 + cols * (self.node_width + h_spacing * 1.2))  # 增加间距系数
+            # 修复：垂直布局应该考虑节点高度和间距，并增加额外缓冲
+            # 使用更安全的计算方式：确保每一行都有足够的空间
+            min_height = max(12, self.margin_y * 2 + rows * (self.node_height + v_spacing * 1.5) + 6)  # 更大的系数和缓冲
+            canvas_height = max(min_height, self.margin_y * 2 + rows * (self.node_height + v_spacing) + 6)  # 更大的额外缓冲
         
         return canvas_width, canvas_height
     
@@ -800,12 +806,24 @@ class OptimizedFlowchartGenerator:
                 x = self.margin_x + x_spacing * (col + 0.5)
                 y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
                 
+                # 边界安全检查：确保节点不会超出画布边界
+                x = max(self.margin_x + self.node_width/2, 
+                       min(canvas_width - self.margin_x - self.node_width/2, x))
+                y = max(self.margin_y + self.node_height/2, 
+                       min(canvas_height - self.margin_y - self.node_height/2, y))
+                
                 # Fine-tune position based on text length / 根据文本长度微调位置
                 text_length = len(node.get('label', ''))
                 if text_length > text_analysis["avg_text_length"] * 1.5:
                     # Give more space to long text nodes / 为长文本节点提供更多空间
                     if col < cols - 1:  # Not the last column
                         x += x_spacing * 0.1
+                
+                # 最终边界检查（在微调后）
+                x = max(self.margin_x + self.node_width/2, 
+                       min(canvas_width - self.margin_x - self.node_width/2, x))
+                y = max(self.margin_y + self.node_height/2, 
+                       min(canvas_height - self.margin_y - self.node_height/2, y))
                 
                 positions[node['id']] = (x, y)
         
@@ -834,12 +852,24 @@ class OptimizedFlowchartGenerator:
                 x = self.margin_x + x_spacing * (col + 0.5)
                 y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
                 
+                # 边界安全检查：确保节点不会超出画布边界
+                x = max(self.margin_x + self.node_width/2, 
+                       min(canvas_width - self.margin_x - self.node_width/2, x))
+                y = max(self.margin_y + self.node_height/2, 
+                       min(canvas_height - self.margin_y - self.node_height/2, y))
+                
                 # Fine-tune position based on text length / 根据文本长度微调位置
                 text_length = len(node.get('label', ''))
                 if text_length > text_analysis["avg_text_length"] * 1.5:
                     # Give more space to long text nodes / 为长文本节点提供更多空间
                     if row < rows - 1:  # Not the last row
                         y -= y_spacing * 0.1
+                
+                # 最终边界检查（在微调后）
+                x = max(self.margin_x + self.node_width/2, 
+                       min(canvas_width - self.margin_x - self.node_width/2, x))
+                y = max(self.margin_y + self.node_height/2, 
+                       min(canvas_height - self.margin_y - self.node_height/2, y))
                 
                 positions[node['id']] = (x, y)
         
@@ -1022,6 +1052,12 @@ class OptimizedFlowchartGenerator:
                 x = self.margin_x + x_spacing * (col + 0.5)
                 y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
                 
+                # 边界安全检查：确保节点不会超出画布边界
+                x = max(self.margin_x + self.node_width/2, 
+                       min(canvas_width - self.margin_x - self.node_width/2, x))
+                y = max(self.margin_y + self.node_height/2, 
+                       min(canvas_height - self.margin_y - self.node_height/2, y))
+                
                 # Fine-tune position for branch nodes / 为分支节点微调位置
                 node_id = node['id']
                 if node_id in structure_analysis['branch_nodes']:
@@ -1065,6 +1101,12 @@ class OptimizedFlowchartGenerator:
                 x = self.margin_x + x_spacing * (col + 0.5)
                 y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
                 
+                # 边界安全检查：确保节点不会超出画布边界
+                x = max(self.margin_x + self.node_width/2, 
+                       min(canvas_width - self.margin_x - self.node_width/2, x))
+                y = max(self.margin_y + self.node_height/2, 
+                       min(canvas_height - self.margin_y - self.node_height/2, y))
+                
                 # Fine-tune position for branch nodes / 为分支节点微调位置
                 node_id = node['id']
                 if node_id in structure_analysis['branch_nodes']:
@@ -1080,6 +1122,12 @@ class OptimizedFlowchartGenerator:
                     # Give more space to long text nodes / 为长文本节点提供更多空间
                     if row < rows - 1:  # Not the last row
                         y -= y_spacing * 0.1
+                
+                # 最终边界检查（在微调后）
+                x = max(self.margin_x + self.node_width/2, 
+                       min(canvas_width - self.margin_x - self.node_width/2, x))
+                y = max(self.margin_y + self.node_height/2, 
+                       min(canvas_height - self.margin_y - self.node_height/2, y))
                 
                 positions[node['id']] = (x, y)
         
