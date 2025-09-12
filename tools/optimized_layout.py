@@ -347,57 +347,67 @@ class OptimizedFlowchartGenerator:
             if line.startswith('graph') or line.startswith('flowchart'):
                 continue
                 
-            # Enhanced pattern matching
+            # Enhanced pattern matching for all Mermaid arrow types
             arrow_patterns = [
-                r'(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?\s*-->\s*(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?(?:\|(.+?)\|)?',
-                r'(\w+)\s*-->\s*(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?(?:\|(.+?)\|)?',
-                r'(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?\s*-->\s*(\w+)(?:\|(.+?)\|)?'
+                # 1. 带标签箭头：A -->|标签| B (优先匹配)
+                r'(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?\s*-->\s*\|(.+?)\|\s*(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?',
+                # 2. 普通箭头：A --> B（源和目标都可能有标签）
+                r'(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?\s*-->\s*(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?',
+                # 3. 简化箭头：A --> B（备用模式）
+                r'(\w+)\s*-->\s*(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?'
             ]
             
             match_found = False
-            for pattern in arrow_patterns:
+            for pattern_index, pattern in enumerate(arrow_patterns):
                 arrow_match = re.match(pattern, line)
                 if arrow_match:
                     match_found = True
                     groups = arrow_match.groups()
                     
-                    if len(groups) >= 3:
+                    # 处理不同模式的匹配结果
+                    if pattern_index == 0:  # 带标签箭头模式：A -->|标签| B
                         from_id = groups[0]
-                        from_label = groups[1] if len(groups) > 1 else None
+                        from_label = groups[1] if groups[1] else None
+                        connection_label = groups[2]  # 箭头标签
+                        to_id = groups[3]
+                        to_label = groups[4] if groups[4] else None
+                    else:  # 普通箭头模式
+                        from_id = groups[0]
+                        from_label = groups[1] if len(groups) > 1 and groups[1] else None
                         to_id = groups[2] if len(groups) > 2 else groups[1]
-                        to_label = groups[3] if len(groups) > 3 else None
-                        connection_label = groups[4] if len(groups) > 4 else ''
+                        to_label = groups[3] if len(groups) > 3 and groups[3] else None
+                        connection_label = ''  # 无标签
+                    
+                    # Process from node
+                    if from_id not in node_dict:
+                        label = self._extract_mermaid_label(from_label) if from_label else from_id
+                        node_type = self._determine_mermaid_node_type(from_label) if from_label else 'default'
                         
-                        # Process from node
-                        if from_id not in node_dict:
-                            label = self._extract_mermaid_label(from_label) if from_label else from_id
-                            node_type = self._determine_mermaid_node_type(from_label) if from_label else 'default'
-                            
-                            nodes.append({
-                                'id': from_id,
-                                'label': label,
-                                'type': node_type
-                            })
-                            node_dict[from_id] = True
-                        
-                        # Process to node
-                        if to_id not in node_dict:
-                            label = self._extract_mermaid_label(to_label) if to_label else to_id
-                            node_type = self._determine_mermaid_node_type(to_label) if to_label else 'default'
-                            
-                            nodes.append({
-                                'id': to_id,
-                                'label': label,
-                                'type': node_type
-                            })
-                            node_dict[to_id] = True
-                        
-                        # Add connection
-                        connections.append({
-                            'from': from_id,
-                            'to': to_id,
-                            'label': connection_label or ''
+                        nodes.append({
+                            'id': from_id,
+                            'label': label,
+                            'type': node_type
                         })
+                        node_dict[from_id] = True
+                    
+                    # Process to node
+                    if to_id not in node_dict:
+                        label = self._extract_mermaid_label(to_label) if to_label else to_id
+                        node_type = self._determine_mermaid_node_type(to_label) if to_label else 'default'
+                        
+                        nodes.append({
+                            'id': to_id,
+                            'label': label,
+                            'type': node_type
+                        })
+                        node_dict[to_id] = True
+                    
+                    # Add connection
+                    connections.append({
+                        'from': from_id,
+                        'to': to_id,
+                        'label': connection_label or ''
+                    })
                     break
         
         return nodes, connections
