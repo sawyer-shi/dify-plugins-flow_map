@@ -2,10 +2,10 @@ identity:
   name: "mermaid_lr"
   author: "sawyer-shi"
   label:
-    en_US: "Mermaid → Left-Right Flowchart"
-    zh_Hans: "Mermaid → 流程图左右布局"
-    pt_BR: "Mermaid → Fluxograma Esquerda-Direita"
-    ja_JP: "Mermaid → 左右フローチャート"
+    en_US: "Flowchart → Left-Right Layout"
+    zh_Hans: "流程图 → 左右布局"
+    pt_BR: "Fluxograma → Layout Esquerda-Direita"
+    ja_JP: "フローチャート → 左右レイアウト"
 description:
   human:
     en_US: "Generate left-right flowcharts from Mermaid graph syntax with node connections."

@@ -6,3 +6,11 @@ Flow Map Tools Module
 This module contains utility functions and tools for the flow map plugin.
 该模块包含流程图插件的实用工具函数。
 """
+
+from .mermaid_lr import MermaidLRTool
+from .mermaid_tb import MermaidTBTool
+
+__all__ = [
+    'MermaidLRTool',
+    'MermaidTBTool'
+]

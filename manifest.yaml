@@ -8,10 +8,10 @@ label:
   pt_BR: "Gerador de Fluxograma"
   ja_JP: "フローマップジェネレーター"
 description:
-  en_US: Convert Markdown or Mermaid to flowcharts locally, supporting left-right and top-bottom layout directions.
-  ja_JP: MarkdownまたはMermaidをローカルでフローチャートに変換し、左右および上下のレイアウト方向をサポート。
-  zh_Hans: 在本地将Markdown或Mermaid转换为流程图，支持左右流向和上下流向布局。
-  pt_BR: Converta Markdown ou Mermaid em fluxogramas localmente, suportando direções de layout esquerda-direita e cima-baixo.
+  en_US: Generate flowcharts from Mermaid syntax locally, supporting left-right and top-bottom layout directions.
+  ja_JP: Mermaid構文からローカルでフローチャートを生成し、左右および上下のレイアウト方向をサポート。
+  zh_Hans: 在本地从Mermaid语法生成流程图，支持左右流向和上下流向布局。
+  pt_BR: Gere fluxogramas a partir da sintaxe Mermaid localmente, suportando direções de layout esquerda-direita e cima-baixo.
 icon: icon.png
 resource:
   memory: 268435456
