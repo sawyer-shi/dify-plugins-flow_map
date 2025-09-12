@@ -548,16 +548,73 @@ class OptimizedFlowchartGenerator:
             return ''
         return re.sub(r'^[\[\{\(]|[\]\}\)]$', '', shape)
     
+    def _analyze_flowchart_structure(self, nodes: List[Dict], connections: List[Dict]) -> Dict[str, Any]:
+        """
+        Analyze flowchart structure to detect branches and decision points
+        分析流程图结构以检测分支和决策点
+        """
+        # Build connection graph / 构建连接图
+        outgoing_connections = {}
+        incoming_connections = {}
+        
+        for connection in connections:
+            from_id = connection['from']
+            to_id = connection['to']
+            
+            # Track outgoing connections / 跟踪出向连接
+            if from_id not in outgoing_connections:
+                outgoing_connections[from_id] = []
+            outgoing_connections[from_id].append(connection)
+            
+            # Track incoming connections / 跟踪入向连接
+            if to_id not in incoming_connections:
+                incoming_connections[to_id] = []
+            incoming_connections[to_id].append(connection)
+        
+        # Detect branch nodes (nodes with multiple outgoing connections) / 检测分支节点（有多个出向连接的节点）
+        branch_nodes = []
+        decision_nodes = []
+        
+        for node in nodes:
+            node_id = node['id']
+            outgoing_count = len(outgoing_connections.get(node_id, []))
+            
+            # Node with multiple outgoing connections is a branch point / 有多个出向连接的节点是分支点
+            if outgoing_count > 1:
+                branch_nodes.append(node_id)
+                
+                # Check if it's explicitly a decision node / 检查是否明确是决策节点
+                if node.get('type') == 'decision' or '{' in node.get('label', ''):
+                    decision_nodes.append(node_id)
+        
+        # Detect merge nodes (nodes with multiple incoming connections) / 检测合并节点（有多个入向连接的节点）
+        merge_nodes = []
+        for node in nodes:
+            node_id = node['id']
+            incoming_count = len(incoming_connections.get(node_id, []))
+            if incoming_count > 1:
+                merge_nodes.append(node_id)
+        
+        # Calculate branching complexity / 计算分支复杂度
+        max_branches = max([len(outgoing_connections.get(node['id'], [])) for node in nodes], default=0)
+        total_branches = sum([max(0, len(outgoing_connections.get(node['id'], [])) - 1) for node in nodes])
+        
+        has_branches = len(branch_nodes) > 0
+        has_complex_branches = max_branches > 2 or total_branches > 2
+        
+        return {
+            'has_branches': has_branches,
+            'has_complex_branches': has_complex_branches,
+            'branch_nodes': branch_nodes,
+            'decision_nodes': decision_nodes,
+            'merge_nodes': merge_nodes,
+            'max_branches': max_branches,
+            'total_branches': total_branches,
+            'outgoing_connections': outgoing_connections,
+            'incoming_connections': incoming_connections
+        }
+    
     def _analyze_text_characteristics(self, nodes: List[Dict]) -> Dict[str, Any]:
-        """Analyze text characteristics of nodes for adaptive layout / 分析节点文本特征以实现自适应布局"""
-        if not nodes:
-            return {
-                "avg_text_length": 0,
-                "max_text_length": 0,
-                "text_complexity": "simple",
-                "has_long_text": False,
-                "text_distribution": "uniform"
-            }
         
         # Calculate text lengths / 计算文本长度
         text_lengths = []
@@ -793,10 +850,18 @@ class OptimizedFlowchartGenerator:
         if not nodes:
             raise ValueError("No nodes to generate flowchart")
         
-        # Calculate adaptive grid dimensions based on content analysis / 基于内容分析计算自适应网格尺寸
-        node_count = len(nodes)
-        rows, cols = self._calculate_adaptive_grid(nodes, layout)
-        canvas_width, canvas_height = self._calculate_adaptive_canvas_size(nodes, layout, rows, cols)
+        # Calculate adaptive grid dimensions and canvas size based on structure / 根据结构计算自适应网格尺寸和画布大小
+        structure_analysis = self._analyze_flowchart_structure(nodes, connections)
+        
+        if structure_analysis['has_branches']:
+            # For branching scenarios, use larger canvas / 分支场景使用更大的画布
+            canvas_width = max(10, len(nodes) * 2.5)  # More horizontal space
+            canvas_height = max(8, len(nodes) * 2.0)   # More vertical space
+            rows, cols = 1, 1  # Not used for free layout
+        else:
+            # For linear scenarios, use normal grid calculation / 线性场景使用正常网格计算
+            rows, cols = self._calculate_adaptive_grid(nodes, layout)
+            canvas_width, canvas_height = self._calculate_adaptive_canvas_size(nodes, layout, rows, cols)
         
         # Create figure with dynamic size and theme support / 创建带主题支持的动态尺寸图形
         theme = self.get_current_theme()
@@ -807,8 +872,14 @@ class OptimizedFlowchartGenerator:
         ax.axis('off')
         ax.set_facecolor(theme['background'])  # Set axes background / 设置坐标轴背景
         
-        # Calculate adaptive positions using the calculated grid / 使用计算出的网格计算自适应位置
-        positions = self._calculate_adaptive_positions(nodes, layout, canvas_width, canvas_height, rows, cols)
+        # Calculate adaptive positions using structure-aware layout / 使用结构感知布局计算自适应位置
+        structure_analysis = self._analyze_flowchart_structure(nodes, connections)
+        if structure_analysis['has_branches']:
+            # Use free layout for branching scenarios / 分支场景使用自由布局
+            positions = self._calculate_free_layout_positions(nodes, connections, layout, canvas_width, canvas_height)
+        else:
+            # Use grid layout for linear scenarios / 线性场景使用网格布局
+            positions = self._calculate_branch_aware_positions(nodes, connections, layout, canvas_width, canvas_height, rows, cols)
         
         # Draw nodes / 绘制节点
         for node in nodes:
@@ -816,7 +887,7 @@ class OptimizedFlowchartGenerator:
         
         # Draw intelligent connections / 绘制智能连接
         for connection in connections:
-            self._draw_intelligent_connection(ax, connection, positions, layout)
+            self._draw_intelligent_connection(ax, connection, positions, layout, nodes, connections)
         
         # Generate unique filename / 生成唯一文件名
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -894,6 +965,268 @@ class OptimizedFlowchartGenerator:
         
         return positions
     
+    def _calculate_branch_aware_positions(self, nodes: List[Dict], connections: List[Dict], layout: str, canvas_width: float, canvas_height: float, rows: int, cols: int) -> Dict[str, Tuple[float, float]]:
+        """Calculate branch-aware node positions to prevent overlap in branching scenarios / 计算分支感知的节点位置以防止分支场景中的重叠"""
+        positions = {}
+        node_count = len(nodes)
+        text_analysis = self._analyze_text_characteristics(nodes)
+        structure_analysis = self._analyze_flowchart_structure(nodes, connections)
+        
+        # Get adaptive spacing / 获取自适应间距
+        base_h_spacing = self.horizontal_spacing
+        base_v_spacing = self.vertical_spacing
+        
+        # Adjust spacing based on content / 根据内容调整间距
+        if text_analysis["text_complexity"] == "complex":
+            h_spacing_factor = 1.2
+            v_spacing_factor = 1.3
+        elif text_analysis["text_complexity"] == "simple":
+            h_spacing_factor = 0.9
+            v_spacing_factor = 0.9
+        else:
+            h_spacing_factor = 1.0
+            v_spacing_factor = 1.0
+        
+        if text_analysis["has_long_text"]:
+            h_spacing_factor *= 1.15
+            v_spacing_factor *= 1.1
+        
+        # Apply additional spacing for branching scenarios / 为分支场景应用额外间距
+        if structure_analysis['has_branches']:
+            branch_spacing_factor = 1.5 if structure_analysis['has_complex_branches'] else 1.3
+            h_spacing_factor *= branch_spacing_factor
+            v_spacing_factor *= branch_spacing_factor
+        
+        if layout == "left-right":
+            # Branch-aware multi-row horizontal layout / 分支感知多行水平布局
+            available_width = canvas_width - 2 * self.margin_x
+            available_height = canvas_height - 2 * self.margin_y
+            
+            # Calculate adaptive spacing / 计算自适应间距
+            if cols > 1:
+                x_spacing = (available_width / cols) * h_spacing_factor
+            else:
+                x_spacing = available_width
+                
+            if rows > 1:
+                y_spacing = (available_height / rows) * v_spacing_factor
+            else:
+                y_spacing = available_height
+            
+            # Position nodes with branch-aware adjustments / 分支感知的节点定位
+            for i, node in enumerate(nodes):
+                row = i // cols
+                col = i % cols
+                
+                # Basic position / 基础位置
+                x = self.margin_x + x_spacing * (col + 0.5)
+                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                
+                # Fine-tune position for branch nodes / 为分支节点微调位置
+                node_id = node['id']
+                if node_id in structure_analysis['branch_nodes']:
+                    # Give branch nodes extra horizontal space / 为分支节点提供额外水平空间
+                    x += x_spacing * 0.1
+                elif node_id in structure_analysis['merge_nodes']:
+                    # Give merge nodes extra space too / 为合并节点也提供额外空间
+                    x -= x_spacing * 0.1
+                
+                # Fine-tune position based on text length / 根据文本长度微调位置
+                text_length = len(node.get('label', ''))
+                if text_length > text_analysis["avg_text_length"] * 1.5:
+                    # Give more space to long text nodes / 为长文本节点提供更多空间
+                    if col < cols - 1:  # Not the last column
+                        x += x_spacing * 0.1
+                
+                positions[node['id']] = (x, y)
+        
+        else:  # top-bottom
+            # Branch-aware multi-column vertical layout / 分支感知多列垂直布局
+            available_width = canvas_width - 2 * self.margin_x
+            available_height = canvas_height - 2 * self.margin_y
+            
+            # Calculate adaptive spacing / 计算自适应间距
+            if cols > 1:
+                x_spacing = (available_width / cols) * h_spacing_factor
+            else:
+                x_spacing = available_width
+                
+            if rows > 1:
+                y_spacing = (available_height / rows) * v_spacing_factor
+            else:
+                y_spacing = available_height
+            
+            # Position nodes with branch-aware adjustments / 分支感知的节点定位
+            for i, node in enumerate(nodes):
+                col = i // rows
+                row = i % rows
+                
+                # Basic position / 基础位置
+                x = self.margin_x + x_spacing * (col + 0.5)
+                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                
+                # Fine-tune position for branch nodes / 为分支节点微调位置
+                node_id = node['id']
+                if node_id in structure_analysis['branch_nodes']:
+                    # Give branch nodes extra vertical space / 为分支节点提供额外垂直空间
+                    y += y_spacing * 0.1
+                elif node_id in structure_analysis['merge_nodes']:
+                    # Give merge nodes extra space too / 为合并节点也提供额外空间
+                    y -= y_spacing * 0.1
+                
+                # Fine-tune position based on text length / 根据文本长度微调位置
+                text_length = len(node.get('label', ''))
+                if text_length > text_analysis["avg_text_length"] * 1.5:
+                    # Give more space to long text nodes / 为长文本节点提供更多空间
+                    if row < rows - 1:  # Not the last row
+                        y -= y_spacing * 0.1
+                
+                positions[node['id']] = (x, y)
+        
+        return positions
+    
+    def _calculate_free_layout_positions(self, nodes: List[Dict], connections: List[Dict], layout: str, canvas_width: float, canvas_height: float) -> Dict[str, Tuple[float, float]]:
+        """Calculate free layout positions for branching flowcharts / 计算分支流程图的自由布局位置"""
+        positions = {}
+        structure_analysis = self._analyze_flowchart_structure(nodes, connections)
+        
+        # Build node hierarchy based on connections / 根据连接构建节点层次结构
+        node_levels = self._build_node_hierarchy(nodes, connections)
+        max_level = max(node_levels.values()) if node_levels else 0
+        
+        # Group nodes by level / 按层级分组节点
+        levels = {}
+        for node_id, level in node_levels.items():
+            if level not in levels:
+                levels[level] = []
+            levels[level].append(node_id)
+        
+        # Calculate adaptive spacing based on canvas size and content / 根据画布大小和内容计算自适应间距
+        margin_x = max(0.5, canvas_width * 0.08)  # 8% margin
+        margin_y = max(0.5, canvas_height * 0.08)  # 8% margin
+        available_width = canvas_width - 2 * margin_x
+        available_height = canvas_height - 2 * margin_y
+        
+        if layout == "left-right":
+            # Free horizontal layout / 自由水平布局
+            level_width = available_width / (max_level + 1) if max_level > 0 else available_width
+            
+            for level, node_ids in levels.items():
+                level_x = margin_x + level * level_width + level_width / 2
+                
+                # Handle multiple nodes at same level / 处理同一层级的多个节点
+                if len(node_ids) == 1:
+                    # Single node at center / 单个节点居中
+                    node_id = node_ids[0]
+                    y = canvas_height / 2
+                    positions[node_id] = (level_x, y)
+                else:
+                    # Multiple nodes distributed vertically / 多个节点垂直分布
+                    self._distribute_nodes_vertically(node_ids, positions, level_x, available_height, margin_y, canvas_height, structure_analysis)
+        
+        else:  # top-bottom
+            # Free vertical layout / 自由垂直布局
+            level_height = available_height / (max_level + 1) if max_level > 0 else available_height
+            
+            for level, node_ids in levels.items():
+                level_y = canvas_height - margin_y - level * level_height - level_height / 2
+                
+                # Handle multiple nodes at same level / 处理同一层级的多个节点
+                if len(node_ids) == 1:
+                    # Single node at center / 单个节点居中
+                    node_id = node_ids[0]
+                    x = canvas_width / 2
+                    positions[node_id] = (x, level_y)
+                else:
+                    # Multiple nodes distributed horizontally / 多个节点水平分布
+                    self._distribute_nodes_horizontally(node_ids, positions, level_y, available_width, margin_x, structure_analysis)
+        
+        return positions
+    
+    def _build_node_hierarchy(self, nodes: List[Dict], connections: List[Dict]) -> Dict[str, int]:
+        """Build node hierarchy levels based on flow connections / 根据流连接构建节点层次级别"""
+        node_levels = {}
+        
+        # Find start nodes (no incoming connections) / 找到起始节点（无入向连接）
+        incoming_counts = {}
+        outgoing_map = {}
+        
+        for node in nodes:
+            incoming_counts[node['id']] = 0
+            outgoing_map[node['id']] = []
+        
+        for conn in connections:
+            incoming_counts[conn['to']] += 1
+            outgoing_map[conn['from']].append(conn['to'])
+        
+        # Start nodes have no incoming connections / 起始节点没有入向连接
+        start_nodes = [node_id for node_id, count in incoming_counts.items() if count == 0]
+        
+        # BFS to assign levels / 使用BFS分配层级
+        queue = [(node_id, 0) for node_id in start_nodes]
+        visited = set()
+        
+        while queue:
+            node_id, level = queue.pop(0)
+            
+            if node_id in visited:
+                continue
+                
+            visited.add(node_id)
+            node_levels[node_id] = level
+            
+            # Add children to queue / 将子节点添加到队列
+            for child_id in outgoing_map[node_id]:
+                if child_id not in visited:
+                    queue.append((child_id, level + 1))
+        
+        # Handle any unconnected nodes / 处理任何未连接的节点
+        for node in nodes:
+            if node['id'] not in node_levels:
+                node_levels[node['id']] = 0
+        
+        return node_levels
+    
+    def _distribute_nodes_vertically(self, node_ids: List[str], positions: Dict, x: float, available_height: float, margin_y: float, canvas_height: float, structure_analysis: Dict):
+        """Distribute nodes vertically with branch-aware spacing / 分支感知的垂直分布节点"""
+        node_count = len(node_ids)
+        
+        # Calculate spacing with extra room for branches / 为分支计算带额外空间的间距
+        spacing_factor = 2.0 if any(node_id in structure_analysis['branch_nodes'] for node_id in node_ids) else 1.5
+        effective_height = available_height * 0.7  # Use 70% to prevent edge overflow
+        node_spacing = (effective_height / max(1, node_count - 1)) if node_count > 1 else 0
+        node_spacing *= spacing_factor
+        
+        # Center the group vertically / 垂直居中组
+        total_height = (node_count - 1) * node_spacing if node_count > 1 else 0
+        start_y = canvas_height / 2 + total_height / 2
+        
+        for i, node_id in enumerate(node_ids):
+            y = start_y - i * node_spacing
+            # Ensure within canvas bounds / 确保在画布范围内
+            y = max(margin_y + 1.0, min(canvas_height - margin_y - 1.0, y))
+            positions[node_id] = (x, y)
+    
+    def _distribute_nodes_horizontally(self, node_ids: List[str], positions: Dict, y: float, available_width: float, margin_x: float, structure_analysis: Dict):
+        """Distribute nodes horizontally with branch-aware spacing / 分支感知的水平分布节点"""
+        node_count = len(node_ids)
+        
+        # Calculate spacing with extra room for branches / 为分支计算带额外空间的间距
+        spacing_factor = 2.0 if any(node_id in structure_analysis['branch_nodes'] for node_id in node_ids) else 1.5
+        effective_width = available_width * 0.7  # Use 70% to prevent edge overflow
+        node_spacing = (effective_width / max(1, node_count - 1)) if node_count > 1 else 0
+        node_spacing *= spacing_factor
+        
+        # Center the group horizontally / 水平居中组
+        total_width = (node_count - 1) * node_spacing if node_count > 1 else 0
+        start_x = margin_x + available_width / 2 - total_width / 2
+        
+        for i, node_id in enumerate(node_ids):
+            x = start_x + i * node_spacing
+            # Ensure within canvas bounds / 确保在画布范围内
+            x = max(margin_x + 1.0, min(margin_x + available_width - 1.0, x))
+            positions[node_id] = (x, y)
+
     def _calculate_compact_positions(self, nodes: List[Dict], layout: str, canvas_width: float, canvas_height: float) -> Dict[str, Tuple[float, float]]:
         """Legacy compact position calculation (kept for compatibility) / 传统紧凑位置计算（保持兼容性）"""
         positions = {}
@@ -1028,8 +1361,8 @@ class OptimizedFlowchartGenerator:
         # In a more advanced implementation, we could use matplotlib's gradient fills
         return patch
     
-    def _draw_intelligent_connection(self, ax, connection: Dict, positions: Dict[str, Tuple[float, float]], layout: str):
-        """Draw intelligent connection between nodes with optimal routing and label-based coloring / 绘制智能节点连接，优化路径和基于标签的颜色"""
+    def _draw_intelligent_connection(self, ax, connection: Dict, positions: Dict[str, Tuple[float, float]], layout: str, nodes: List[Dict], connections: List[Dict]):
+        """Draw intelligent connection between nodes with branch-aware routing and label-based coloring / 绘制智能节点连接，具有分支感知路由和基于标签的颜色"""
         from_id = connection['from']
         to_id = connection['to']
         connection_label = connection.get('label', '')
@@ -1040,30 +1373,42 @@ class OptimizedFlowchartGenerator:
         from_pos = positions[from_id]
         to_pos = positions[to_id]
         
+        # Analyze flowchart structure to detect branches / 分析流程图结构以检测分支
+        structure_analysis = self._analyze_flowchart_structure(nodes, connections)
+        has_branches = structure_analysis['has_branches']
+        branch_nodes = structure_analysis['branch_nodes']
+        
         # Calculate connection points based on node positions / 根据节点位置计算连接点
         from_x, from_y = from_pos
         to_x, to_y = to_pos
         
-        # Determine optimal connection style based on layout and positions / 根据布局和位置确定最佳连接样式
+        # Determine optimal connection style based on branch detection / 根据分支检测确定最佳连接样式
         dx = to_x - from_x
         dy = to_y - from_y
         
-        if layout == "left-right":
-            # For left-right layout, prefer horizontal flow / 左右布局优先水平流向
-            if abs(dx) > abs(dy):  # Mostly horizontal
-                # Direct horizontal connection / 直接水平连接
-                self._draw_direct_arrow(ax, from_pos, to_pos, connection_label)
-            else:  # Mostly vertical (multi-row case)
-                # Draw stepped connection for better readability / 绘制阶梯连接以提高可读性
-                self._draw_stepped_connection(ax, from_pos, to_pos, "horizontal-first", connection_label)
-        else:  # top-bottom
-            # For top-bottom layout, prefer vertical flow / 上下布局优先垂直流向
-            if abs(dy) > abs(dx):  # Mostly vertical
-                # Direct vertical connection / 直接垂直连接
-                self._draw_direct_arrow(ax, from_pos, to_pos, connection_label)
-            else:  # Mostly horizontal (multi-column case)
-                # Draw stepped connection for better readability / 绘制阶梯连接以提高可读性
-                self._draw_stepped_connection(ax, from_pos, to_pos, "vertical-first", connection_label)
+        # If there are branches, use direct connections to avoid overlap / 如果有分支，使用直接连接以避免重叠
+        if has_branches and (from_id in branch_nodes or to_id in branch_nodes):
+            # For branch scenarios, always use direct arrows to prevent element overlap
+            # 对于分支场景，始终使用直接箭头以防止元素重叠
+            self._draw_direct_arrow(ax, from_pos, to_pos, connection_label)
+        else:
+            # For non-branch scenarios, use layout-based routing / 对于非分支场景，使用基于布局的路由
+            if layout == "left-right":
+                # For left-right layout, prefer horizontal flow / 左右布局优先水平流向
+                if abs(dx) > abs(dy):  # Mostly horizontal
+                    # Direct horizontal connection / 直接水平连接
+                    self._draw_direct_arrow(ax, from_pos, to_pos, connection_label)
+                else:  # Mostly vertical (multi-row case)
+                    # Draw stepped connection for better readability / 绘制阶梯连接以提高可读性
+                    self._draw_stepped_connection(ax, from_pos, to_pos, "horizontal-first", connection_label)
+            else:  # top-bottom
+                # For top-bottom layout, prefer vertical flow / 上下布局优先垂直流向
+                if abs(dy) > abs(dx):  # Mostly vertical
+                    # Direct vertical connection / 直接垂直连接
+                    self._draw_direct_arrow(ax, from_pos, to_pos, connection_label)
+                else:  # Mostly horizontal (multi-column case)
+                    # Draw stepped connection for better readability / 绘制阶梯连接以提高可读性
+                    self._draw_stepped_connection(ax, from_pos, to_pos, "vertical-first", connection_label)
         
         # 如果有标签，在箭头中间绘制标签文本
         if connection_label:
