@@ -3,7 +3,7 @@ type: plugin
 author: sawyer-shi
 name: flow_map
 label:
-  en_US: "Flow Map Generator"
+  en_US: "Flow Chart Generator"
   zh_Hans: "流程图生成器"
   pt_BR: "Gerador de Fluxograma"
   ja_JP: "フローマップジェネレーター"

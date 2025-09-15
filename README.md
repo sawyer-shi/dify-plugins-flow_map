@@ -49,6 +49,8 @@ A powerful flowchart generation plugin that converts Markdown and Mermaid syntax
   - Custom theme support
   
 - 🔧 **Local Processing**
+  - **Local Generation**: Mind maps generated locally, no API Key required, no external network or services needed
+  - **Secure & Reliable**: Data stays private, completely offline processing, protects user privacy
   - No external API dependencies
   - Fast generation with matplotlib
   - Privacy-focused design
@@ -56,15 +58,15 @@ A powerful flowchart generation plugin that converts Markdown and Mermaid syntax
 
 ## 🚀 Quick Start
 
-### Dify Plugin Installation
+1. **Download from Dify Plugin Marketplace**
+   - Go to Dify Plugin Marketplace
+   - Search and download `flow_map` plugin
+   - Enable FlowMap plugin in your workspace
 
-1. **Download Plugin Package**
-   - Get `flow_map-0.0.1.difypkg` from releases
-   
-2. **Install in Dify**
-   - Navigate to Plugin Management
-   - Upload the .difypkg file
-   - Enable FlowMap plugin
+2. **LLM Integration** ⭐
+   - Add an LLM node in your Dify workflow
+   - Use the simplest prompt: **"Summarize user input #context# into Mermaid flowchart text format"**
+   - Connect LLM output to FlowMap plugin input
 
 ### Basic Usage Examples
 
@@ -269,6 +271,8 @@ If you encounter any issues or have questions:
   - 自定义主题支持
   
 - 🔧 **本地处理**
+  - **本地生成**: 脑图在本地生成，无需API Key，无需链接外部网络或服务
+  - **安全可靠**: 数据不外泄，完全离线处理，保护用户隐私
   - 无外部API依赖
   - matplotlib快速生成
   - 注重隐私设计
@@ -276,15 +280,15 @@ If you encounter any issues or have questions:
 
 ## 🚀 快速开始
 
-### Dify插件安装
+1. **从Dify插件市场下载**
+   - 进入Dify插件市场
+   - 搜索并下载 `flow_map` 插件
+   - 在您的工作区中启用FlowMap插件
 
-1. **下载插件包**
-   - 从发布页面获取 `flow_map-0.0.1.difypkg`
-   
-2. **在Dify中安装**
-   - 进入插件管理
-   - 上传.difypkg文件
-   - 启用FlowMap插件
+2. **LLM集成** ⭐
+   - 在Dify工作流中添加LLM节点
+   - 使用最简单的提示词：**"将用户输入#context#总结为Mermaid流程图文本格式"**
+   - 将LLM输出连接到FlowMap插件输入
 
 ### 基本使用示例
 

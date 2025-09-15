@@ -37,8 +37,8 @@ class OptimizedFlowchartGenerator:
         self.fig_size = (10, 6)
         
         # Optimized node dimensions / 优化的节点尺寸
-        self.node_width = 2.0   # 增加宽度以适应更多文本
-        self.node_height = 1.0  # 增加高度以支持多行文本
+        self.node_width = 2.5   # 进一步增加宽度以适应更多文本
+        self.node_height = 1.2  # 进一步增加高度以支持多行文本和超出显示
         
         # Intelligent spacing for multi-row/column layouts / 智能间距适配多行多列布局
         self.horizontal_spacing = 3.2  # 增加水平间距，确保足够的视觉空间
@@ -460,17 +460,32 @@ class OptimizedFlowchartGenerator:
                     
                     # 处理不同模式的匹配结果
                     if pattern_index == 0:  # 带标签箭头模式：A -->|标签| B
-                        from_id = groups[0]
-                        from_label = groups[1] if groups[1] else None
-                        connection_label = groups[2]  # 箭头标签
-                        to_id = groups[3]
-                        to_label = groups[4] if groups[4] else None
-                    else:  # 普通箭头模式
-                        from_id = groups[0]
-                        from_label = groups[1] if len(groups) > 1 and groups[1] else None
-                        to_id = groups[2] if len(groups) > 2 else groups[1]
-                        to_label = groups[3] if len(groups) > 3 and groups[3] else None
-                        connection_label = ''  # 无标签
+                        if len(groups) >= 5:
+                            from_id = groups[0]
+                            from_label = groups[1] if groups[1] else None
+                            connection_label = groups[2]  # 箭头标签
+                            to_id = groups[3]
+                            to_label = groups[4] if groups[4] else None
+                        else:
+                            continue  # 跳过不合法的匹配
+                    elif pattern_index == 1:  # 普通箭头模式：A --> B（源和目标都可能有标签）
+                        if len(groups) >= 4:
+                            from_id = groups[0]
+                            from_label = groups[1] if groups[1] else None
+                            to_id = groups[2]
+                            to_label = groups[3] if groups[3] else None
+                            connection_label = ''  # 无标签
+                        else:
+                            continue  # 跳过不合法的匹配
+                    else:  # pattern_index == 2, 简化箭头模式：A --> B
+                        if len(groups) >= 2:
+                            from_id = groups[0]
+                            from_label = None
+                            to_id = groups[1]
+                            to_label = groups[2] if len(groups) > 2 and groups[2] else None
+                            connection_label = ''  # 无标签
+                        else:
+                            continue  # 跳过不合法的匹配
                     
                     # Process from node
                     if from_id not in node_dict:
@@ -1447,32 +1462,59 @@ class OptimizedFlowchartGenerator:
         
     def _format_text_for_display(self, text: str) -> str:
         """
-        格式化文本以优化显示，支持智能换行
+        格式化文本以优化显示，支持智能换行和超出框显示
         """
         if not text:
             return ''
             
         # 如果文本较短，直接返回
-        if len(text) <= 12:
+        if len(text) <= 10:
             return text
             
         # 对于中等长度文本，尝试智能换行
-        if len(text) <= 24:
+        if len(text) <= 20:
             # 查找合适的换行位置（空格、标点符号等）
             mid_point = len(text) // 2
-            for i in range(mid_point - 3, mid_point + 4):
-                if i > 0 and i < len(text) and text[i] in ' 、。，：；':
+            for i in range(mid_point - 2, mid_point + 3):
+                if i > 0 and i < len(text) and text[i] in ' 、。，：；！？':
                     return text[:i+1] + '\n' + text[i+1:]
             
             # 如果没有找到合适的分割点，在中间分割
             return text[:mid_point] + '\n' + text[mid_point:]
         
-        # 对于较长文本，使用省略号但允许更多字符
-        return text[:20] + '...'
+        # 对于较长文本，进行多行换行
+        if len(text) <= 40:
+            # 尝试分成2-3行
+            lines = []
+            current_line = ''
+            chars_per_line = 15  # 每行大约15个字符
+            
+            words = text.replace('，', '，|').replace('。', '。|').replace('；', '；|').replace('：', '：|').split('|')
+            
+            for word in words:
+                if len(current_line + word) <= chars_per_line:
+                    current_line += word
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = word
+            
+            if current_line:
+                lines.append(current_line)
+            
+            # 最多3行，多余的用省略号
+            if len(lines) > 3:
+                lines = lines[:3]
+                lines[-1] = lines[-1][:12] + '...'
+            
+            return '\n'.join(lines)
+        
+        # 对于超长文本，截取但保留更多内容
+        return text[:35] + '...'
     
     def _draw_enhanced_text(self, ax, x: float, y: float, text: str, color: str):
         """
-        增强文本渲染，支持多行和自适应字体大小
+        增强文本渲染，支持多行、自适应字体大小和超出框显示
         """
         if not text:
             return
@@ -1480,26 +1522,55 @@ class OptimizedFlowchartGenerator:
         # 根据文本长度和行数调整字体大小
         lines = text.split('\n')
         max_line_length = max(len(line) for line in lines) if lines else 0
+        line_count = len(lines)
         
-        if len(lines) == 1:
+        # 更细致的字体大小控制
+        if line_count == 1:
             # 单行文本
-            if max_line_length <= 8:
+            if max_line_length <= 6:
+                font_size = 11
+            elif max_line_length <= 10:
                 font_size = 10
             elif max_line_length <= 15:
                 font_size = 9
-            else:
+            elif max_line_length <= 20:
                 font_size = 8
+            else:
+                font_size = 7
+        elif line_count == 2:
+            # 两行文本
+            if max_line_length <= 10:
+                font_size = 9
+            elif max_line_length <= 15:
+                font_size = 8
+            else:
+                font_size = 7
         else:
-            # 多行文本
-            font_size = 8
+            # 三行或更多文本
+            if max_line_length <= 8:
+                font_size = 8
+            elif max_line_length <= 12:
+                font_size = 7
+            else:
+                font_size = 6
         
-        # 绘制文本，允许超出节点边界
+        # 确保字体大小不会太小
+        font_size = max(6, font_size)
+        
+        # 调整行间距，多行文本时更紧凑
+        if line_count <= 2:
+            linespacing = 1.0
+        else:
+            linespacing = 0.8
+        
+        # 绘制文本，完全允许超出节点边界
         ax.text(x, y, text, ha='center', va='center', 
                fontsize=font_size, weight='bold', 
                fontproperties=self.chinese_font,
                color=color, zorder=10,
-               linespacing=0.9,  # 调整行间距
-               clip_on=False)     # 允许超出边界
+               linespacing=linespacing,
+               clip_on=False,      # 允许超出边界
+               bbox=None)          # 不使用文本框，确保文字可以完全显示
     
     def _create_node_patch(self, x: float, y: float, shape: str, node_type: str, 
                           fill_color: str, border_color: str, alpha: float = 1.0):
