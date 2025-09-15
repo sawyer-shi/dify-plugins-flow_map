@@ -37,20 +37,20 @@ class OptimizedFlowchartGenerator:
         self.fig_size = (10, 6)
         
         # Optimized node dimensions / 优化的节点尺寸
-        self.node_width = 1.4
-        self.node_height = 0.6
+        self.node_width = 2.0   # 增加宽度以适应更多文本
+        self.node_height = 1.0  # 增加高度以支持多行文本
         
         # Intelligent spacing for multi-row/column layouts / 智能间距适配多行多列布局
-        self.horizontal_spacing = 2.2  # 节点间水平间距（增加以适应多行）
-        self.vertical_spacing = 1.4    # 节点间垂直间距（增加以适应多列）
+        self.horizontal_spacing = 3.2  # 增加水平间距，确保足够的视觉空间
+        self.vertical_spacing = 2.2    # 增加垂直间距，改善视觉呼吸感
         
         # Optimized canvas margins / 优化的画布边距
-        self.margin_x = 0.6  # 减少水平边距以更好利用空间
-        self.margin_y = 0.6  # 减少垂直边距以更好利用空间
+        self.margin_x = 1.2  # 增加水平边距，防止边缘拥挤
+        self.margin_y = 1.2  # 增加垂直边距，防止边缘拥挤
         
         # Visual enhancement: Theme system / 视觉增强：主题系统
         self.themes = self._initialize_themes()
-        self.current_theme = 'modern'  # Default theme / 默认主题
+        self.current_theme = 'classic'  # Default theme / 默认主题（改为经典主题）
         
         # Node shapes for different types / 不同类型的节点形状
         self.node_shapes = {
@@ -77,9 +77,9 @@ class OptimizedFlowchartGenerator:
         # Adaptive grid system parameters / 自适应网格系统参数
         self.max_text_length_short = 8   # 短文本阈值
         self.max_text_length_medium = 15  # 中等文本阈值
-        self.min_nodes_per_row = 2        # 每行最少节点数
+        self.min_nodes_per_row = 3        # 每行最少节点数（避免2元素排版）
         self.max_nodes_per_row = 6        # 每行最多节点数
-        self.min_nodes_per_col = 2        # 每列最少节点数  
+        self.min_nodes_per_col = 3        # 每列最少节点数（避免2元素排版）
         self.max_nodes_per_col = 8        # 每列最多节点数
     
     def _initialize_themes(self):
@@ -640,7 +640,11 @@ class OptimizedFlowchartGenerator:
         has_long_text = any(length > self.max_text_length_medium for length in text_lengths)
         
         # Analyze text distribution / 分析文本分布
-        length_variance = sum((l - avg_length) ** 2 for l in text_lengths) / len(text_lengths)
+        if len(text_lengths) > 0:
+            length_variance = sum((l - avg_length) ** 2 for l in text_lengths) / len(text_lengths)
+        else:
+            length_variance = 0
+            
         if length_variance < 2:
             distribution = "uniform"
         elif length_variance < 10:
@@ -659,100 +663,156 @@ class OptimizedFlowchartGenerator:
             "text_lengths": text_lengths
         }
     
+    def _calculate_dynamic_spacing(self, node_count: int, layout: str) -> Tuple[float, float]:
+        """
+        根据节点数量和布局类型动态计算间距
+        Calculate dynamic spacing based on node count and layout type
+        """
+        base_h_spacing = self.horizontal_spacing
+        base_v_spacing = self.vertical_spacing
+        
+        # 根据节点数量调整间距系数
+        if node_count <= 4:
+            # 少量节点：给予更多空间
+            spacing_factor = 1.2
+        elif node_count <= 8:
+            # 中等数量：保持适中空间
+            spacing_factor = 1.0
+        elif node_count <= 12:
+            # 较多节点：适度减少间距
+            spacing_factor = 0.9
+        else:
+            # 大量节点：紧凑布局
+            spacing_factor = 0.8
+        
+        dynamic_h_spacing = base_h_spacing * spacing_factor
+        dynamic_v_spacing = base_v_spacing * spacing_factor
+        
+        # 确保最小间距，防止过度拥挤
+        min_h_spacing = self.node_width + 0.8  # 至少保证0.8的空白间距
+        min_v_spacing = self.node_height + 0.6  # 至少保证0.6的空白间距
+        
+        dynamic_h_spacing = max(dynamic_h_spacing, min_h_spacing)
+        dynamic_v_spacing = max(dynamic_v_spacing, min_v_spacing)
+        
+        return dynamic_h_spacing, dynamic_v_spacing
+    
     def _calculate_adaptive_grid(self, nodes: List[Dict], layout: str) -> Tuple[int, int]:
         """Calculate adaptive grid dimensions based on content analysis / 基于内容分析计算自适应网格尺寸"""
         node_count = len(nodes)
+        if node_count == 0:
+            return 1, 1
+            
         text_analysis = self._analyze_text_characteristics(nodes)
         
         if layout == "left-right":
-            # Adaptive horizontal layout / 自适应水平布局
-            base_nodes_per_row = 4  # 基础每行节点数
-            
-            # Adjust based on text complexity / 根据文本复杂度调整
-            if text_analysis["text_complexity"] == "simple":
-                nodes_per_row = min(self.max_nodes_per_row, base_nodes_per_row + 1)  # 简单文本可以多放
-            elif text_analysis["text_complexity"] == "complex":
-                nodes_per_row = max(self.min_nodes_per_row, base_nodes_per_row - 1)  # 复杂文本少放
+            # 水平布局：优先横向排列，减少行数
+            if node_count <= 6:
+                # 少量节点：单行排列
+                cols = node_count
+                rows = 1
+            elif node_count <= 12:
+                # 中等节点：2行排列
+                cols = (node_count + 1) // 2
+                rows = 2
+            elif node_count <= 18:
+                # 较多节点：3行排列
+                cols = (node_count + 2) // 3
+                rows = 3
             else:
-                nodes_per_row = base_nodes_per_row
+                # 大量节点：4行排列
+                cols = (node_count + 3) // 4
+                rows = 4
             
-            # Adjust for long text / 针对长文本调整
-            if text_analysis["has_long_text"]:
-                nodes_per_row = max(self.min_nodes_per_row, nodes_per_row - 1)
+            # 根据文本复杂度调整：复杂文本减少每行列数
+            if text_analysis["text_complexity"] == "complex" or text_analysis["has_long_text"]:
+                if cols > 4:
+                    cols = max(4, cols - 1)
+                    rows = max(1, (node_count + cols - 1) // cols)
             
-            # Adjust for text distribution / 根据文本分布调整
-            if text_analysis["text_distribution"] == "mixed":
-                nodes_per_row = max(self.min_nodes_per_row, nodes_per_row - 1)
-            
-            # Calculate rows and columns / 计算行列数
-            nodes_per_row = max(self.min_nodes_per_row, min(self.max_nodes_per_row, nodes_per_row))
-            rows = max(1, (node_count + nodes_per_row - 1) // nodes_per_row)
-            cols = min(node_count, nodes_per_row)
+            # 确保网格尺寸合理
+            cols = max(1, min(cols, node_count))
+            rows = max(1, (node_count + cols - 1) // cols)
             
         else:  # top-bottom
-            # Adaptive vertical layout / 自适应垂直布局
-            base_nodes_per_col = 5  # 基础每列节点数
-            
-            # Adjust based on text complexity / 根据文本复杂度调整
-            if text_analysis["text_complexity"] == "simple":
-                nodes_per_col = min(self.max_nodes_per_col, base_nodes_per_col + 2)  # 简单文本可以多放
-            elif text_analysis["text_complexity"] == "complex":
-                nodes_per_col = max(self.min_nodes_per_col, base_nodes_per_col - 1)  # 复杂文本少放
+            # 垂直布局：优先纵向排列，减少列数
+            if node_count <= 8:
+                # 少量节点：单列排列
+                cols = 1
+                rows = node_count
+            elif node_count <= 16:
+                # 中等节点：2列排列
+                cols = 2
+                rows = (node_count + 1) // 2
+            elif node_count <= 24:
+                # 较多节点：3列排列
+                cols = 3
+                rows = (node_count + 2) // 3
             else:
-                nodes_per_col = base_nodes_per_col
+                # 大量节点：4列排列
+                cols = 4
+                rows = (node_count + 3) // 4
             
-            # Adjust for long text / 针对长文本调整
-            if text_analysis["has_long_text"]:
-                nodes_per_col = max(self.min_nodes_per_col, nodes_per_col - 1)
+            # 根据文本复杂度调整：复杂文本减少每列行数
+            if text_analysis["text_complexity"] == "complex" or text_analysis["has_long_text"]:
+                if rows > 6:
+                    rows = max(6, rows - 1)
+                    cols = max(1, (node_count + rows - 1) // rows)
             
-            # Adjust for text distribution / 根据文本分布调整
-            if text_analysis["text_distribution"] == "mixed":
-                nodes_per_col = max(self.min_nodes_per_col, nodes_per_col - 1)
-            
-            # Calculate rows and columns / 计算行列数
-            nodes_per_col = max(self.min_nodes_per_col, min(self.max_nodes_per_col, nodes_per_col))
-            cols = max(1, (node_count + nodes_per_col - 1) // nodes_per_col)
-            rows = min(node_count, nodes_per_col)
+            # 确保网格尺寸合理
+            cols = max(1, min(cols, node_count))
+            rows = max(1, (node_count + cols - 1) // cols)
         
         return rows, cols
     
     def _calculate_adaptive_canvas_size(self, nodes: List[Dict], layout: str, rows: int, cols: int) -> Tuple[float, float]:
         """Calculate adaptive canvas size based on content analysis / 基于内容分析计算自适应画布尺寸"""
         text_analysis = self._analyze_text_characteristics(nodes)
+        node_count = len(nodes)
+        
+        # 使用动态间距计算
+        dynamic_h_spacing, dynamic_v_spacing = self._calculate_dynamic_spacing(node_count, layout)
         
         # Base spacing / 基础间距
-        base_h_spacing = self.horizontal_spacing
-        base_v_spacing = self.vertical_spacing
+        base_h_spacing = dynamic_h_spacing
+        base_v_spacing = dynamic_v_spacing
         
         # Adjust spacing based on text complexity / 根据文本复杂度调整间距
         if text_analysis["text_complexity"] == "complex":
-            h_spacing = base_h_spacing * 1.2  # 复杂文本需要更多空间
-            v_spacing = base_v_spacing * 1.3
+            h_spacing = base_h_spacing * 1.1  # 复杂文本需要更多空间
+            v_spacing = base_v_spacing * 1.1
         elif text_analysis["text_complexity"] == "simple":
-            h_spacing = base_h_spacing * 0.9  # 简单文本可以更紧凑
-            v_spacing = base_v_spacing * 0.9
+            h_spacing = base_h_spacing * 0.95  # 简单文本可以更紧凑
+            v_spacing = base_v_spacing * 0.95
         else:
             h_spacing = base_h_spacing
             v_spacing = base_v_spacing
         
         # Adjust for long text / 针对长文本调整
         if text_analysis["has_long_text"]:
-            h_spacing *= 1.15
-            v_spacing *= 1.1
+            h_spacing *= 1.1
+            v_spacing *= 1.05
         
         # Calculate canvas dimensions / 计算画布尺寸
         if layout == "left-right":
-            # 保证水平布局有足够的宽度和高度
-            min_width = max(10, self.margin_x * 2 + cols * (self.node_width + h_spacing * 1.2))  # 增加间距系数
-            canvas_width = max(min_width, self.margin_x * 2 + cols * h_spacing)
-            canvas_height = max(8, self.margin_y * 2 + rows * (self.node_height + v_spacing) + 2)  # 额外缓冲
+            # 水平布局：确保有足够的宽度防止覆盖
+            # 计算实际需要的宽度：节点宽度 + 间距
+            required_width = cols * self.node_width + (cols - 1) * h_spacing if cols > 1 else self.node_width
+            canvas_width = max(12, self.margin_x * 2 + required_width * 1.3)  # 30%额外空间
+            
+            # 计算实际需要的高度
+            required_height = rows * self.node_height + (rows - 1) * v_spacing if rows > 1 else self.node_height
+            canvas_height = max(8, self.margin_y * 2 + required_height * 1.2)  # 20%额外空间
+            
         else:  # top-bottom
-            # 保证垂直布局有足够的宽度和高度
-            canvas_width = max(10, self.margin_x * 2 + cols * (self.node_width + h_spacing * 1.2))  # 增加间距系数
-            # 修复：垂直布局应该考虑节点高度和间距，并增加额外缓冲
-            # 使用更安全的计算方式：确保每一行都有足够的空间
-            min_height = max(12, self.margin_y * 2 + rows * (self.node_height + v_spacing * 1.5) + 6)  # 更大的系数和缓冲
-            canvas_height = max(min_height, self.margin_y * 2 + rows * (self.node_height + v_spacing) + 6)  # 更大的额外缓冲
+            # 垂直布局：确保有足够的高度防止覆盖
+            # 计算实际需要的宽度
+            required_width = cols * self.node_width + (cols - 1) * h_spacing if cols > 1 else self.node_width
+            canvas_width = max(12, self.margin_x * 2 + required_width * 1.2)  # 20%额外空间
+            
+            # 计算实际需要的高度
+            required_height = rows * self.node_height + (rows - 1) * v_spacing if rows > 1 else self.node_height
+            canvas_height = max(10, self.margin_y * 2 + required_height * 1.3)  # 30%额外空间
         
         return canvas_width, canvas_height
     
@@ -782,44 +842,45 @@ class OptimizedFlowchartGenerator:
             v_spacing_factor *= 1.1
         
         if layout == "left-right":
-            # Adaptive multi-row horizontal layout / 自适应多行水平布局
+            # 水平布局：优先横向排列，确保间距均匀
             available_width = canvas_width - 2 * self.margin_x
             available_height = canvas_height - 2 * self.margin_y
             
-            # Calculate adaptive spacing / 计算自适应间距
+            # 计算节点间的实际间距，去除间距因子的干扰
             if cols > 1:
-                x_spacing = (available_width / cols) * h_spacing_factor
+                # 计算每个节点占用的总宽度（包括节点和间距）
+                total_node_width = cols * self.node_width
+                remaining_width = available_width - total_node_width
+                x_spacing_gap = remaining_width / (cols - 1) if cols > 1 else 0  # 节点间纯间距
+                x_spacing = self.node_width + x_spacing_gap  # 节点中心到中心的距离
             else:
                 x_spacing = available_width
                 
             if rows > 1:
-                y_spacing = (available_height / rows) * v_spacing_factor
+                # 计算每个节点占用的总高度（包括节点和间距）
+                total_node_height = rows * self.node_height
+                remaining_height = available_height - total_node_height
+                y_spacing_gap = remaining_height / (rows - 1) if rows > 1 else 0  # 节点间纯间距
+                y_spacing = self.node_height + y_spacing_gap  # 节点中心到中心的距离
             else:
                 y_spacing = available_height
             
-            # Position nodes with content-aware adjustments / 内容感知的节点定位
+            # 确保最小间距，防止节点重叠
+            min_x_spacing = self.node_width + 0.8  # 最小水平间距
+            min_y_spacing = self.node_height + 0.8  # 最小垂直间距
+            x_spacing = max(x_spacing, min_x_spacing)
+            y_spacing = max(y_spacing, min_y_spacing)
+            
+            # 按行优先的顺序计算节点位置
             for i, node in enumerate(nodes):
-                row = i // cols
-                col = i % cols
+                row = i // cols  # 当前行号（从0开始）
+                col = i % cols   # 当前列号（从0开始）
                 
-                # Basic position / 基础位置
-                x = self.margin_x + x_spacing * (col + 0.5)
-                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                # 计算节点中心位置
+                x = self.margin_x + self.node_width/2 + col * x_spacing
+                y = canvas_height - self.margin_y - self.node_height/2 - row * y_spacing
                 
                 # 边界安全检查：确保节点不会超出画布边界
-                x = max(self.margin_x + self.node_width/2, 
-                       min(canvas_width - self.margin_x - self.node_width/2, x))
-                y = max(self.margin_y + self.node_height/2, 
-                       min(canvas_height - self.margin_y - self.node_height/2, y))
-                
-                # Fine-tune position based on text length / 根据文本长度微调位置
-                text_length = len(node.get('label', ''))
-                if text_length > text_analysis["avg_text_length"] * 1.5:
-                    # Give more space to long text nodes / 为长文本节点提供更多空间
-                    if col < cols - 1:  # Not the last column
-                        x += x_spacing * 0.1
-                
-                # 最终边界检查（在微调后）
                 x = max(self.margin_x + self.node_width/2, 
                        min(canvas_width - self.margin_x - self.node_width/2, x))
                 y = max(self.margin_y + self.node_height/2, 
@@ -828,44 +889,45 @@ class OptimizedFlowchartGenerator:
                 positions[node['id']] = (x, y)
         
         else:  # top-bottom
-            # Adaptive multi-column vertical layout / 自适应多列垂直布局
+            # 垂直布局：优先纵向排列，确保间距均匀
             available_width = canvas_width - 2 * self.margin_x
             available_height = canvas_height - 2 * self.margin_y
             
-            # Calculate adaptive spacing / 计算自适应间距
+            # 计算节点间的实际间距，去除间距因子的干扰
             if cols > 1:
-                x_spacing = (available_width / cols) * h_spacing_factor
+                # 计算每个节点占用的总宽度（包括节点和间距）
+                total_node_width = cols * self.node_width
+                remaining_width = available_width - total_node_width
+                x_spacing_gap = remaining_width / (cols - 1) if cols > 1 else 0  # 节点间纯间距
+                x_spacing = self.node_width + x_spacing_gap  # 节点中心到中心的距离
             else:
                 x_spacing = available_width
                 
             if rows > 1:
-                y_spacing = (available_height / rows) * v_spacing_factor
+                # 计算每个节点占用的总高度（包括节点和间距）
+                total_node_height = rows * self.node_height
+                remaining_height = available_height - total_node_height
+                y_spacing_gap = remaining_height / (rows - 1) if rows > 1 else 0  # 节点间纯间距
+                y_spacing = self.node_height + y_spacing_gap  # 节点中心到中心的距离
             else:
                 y_spacing = available_height
             
-            # Position nodes with content-aware adjustments / 内容感知的节点定位
+            # 确保最小间距，防止节点重叠
+            min_x_spacing = self.node_width + 0.8  # 最小水平间距
+            min_y_spacing = self.node_height + 0.8  # 最小垂直间距
+            x_spacing = max(x_spacing, min_x_spacing)
+            y_spacing = max(y_spacing, min_y_spacing)
+            
+            # 按列优先的顺序计算节点位置
             for i, node in enumerate(nodes):
-                col = i // rows
-                row = i % rows
+                col = i // rows  # 当前列号（从0开始）
+                row = i % rows   # 当前行号（从0开始）
                 
-                # Basic position / 基础位置
-                x = self.margin_x + x_spacing * (col + 0.5)
-                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                # 计算节点中心位置
+                x = self.margin_x + self.node_width/2 + col * x_spacing
+                y = canvas_height - self.margin_y - self.node_height/2 - row * y_spacing
                 
                 # 边界安全检查：确保节点不会超出画布边界
-                x = max(self.margin_x + self.node_width/2, 
-                       min(canvas_width - self.margin_x - self.node_width/2, x))
-                y = max(self.margin_y + self.node_height/2, 
-                       min(canvas_height - self.margin_y - self.node_height/2, y))
-                
-                # Fine-tune position based on text length / 根据文本长度微调位置
-                text_length = len(node.get('label', ''))
-                if text_length > text_analysis["avg_text_length"] * 1.5:
-                    # Give more space to long text nodes / 为长文本节点提供更多空间
-                    if row < rows - 1:  # Not the last row
-                        y -= y_spacing * 0.1
-                
-                # 最终边界检查（在微调后）
                 x = max(self.margin_x + self.node_width/2, 
                        min(canvas_width - self.margin_x - self.node_width/2, x))
                 y = max(self.margin_y + self.node_height/2, 
@@ -938,58 +1000,80 @@ class OptimizedFlowchartGenerator:
         node_count = len(nodes)
         
         if layout == "left-right":
-            # Multi-row horizontal layout / 多行水平布局
-            # Calculate available space for nodes / 计算节点可用空间
+            # 水平布局：优先横向排列，确保间距均匀
             available_width = canvas_width - 2 * self.margin_x
             available_height = canvas_height - 2 * self.margin_y
             
-            # Calculate spacing between nodes / 计算节点间距
+            # 计算节点间的实际间距
             if cols > 1:
-                x_spacing = available_width / cols
+                total_node_width = cols * self.node_width
+                remaining_width = available_width - total_node_width
+                x_spacing_gap = remaining_width / (cols - 1) if cols > 1 else 0
+                x_spacing = self.node_width + x_spacing_gap
             else:
                 x_spacing = available_width
                 
             if rows > 1:
-                y_spacing = available_height / rows
+                total_node_height = rows * self.node_height
+                remaining_height = available_height - total_node_height
+                y_spacing_gap = remaining_height / (rows - 1) if rows > 1 else 0
+                y_spacing = self.node_height + y_spacing_gap
             else:
                 y_spacing = available_height
             
-            # Position nodes in grid layout / 网格布局放置节点
+            # 确保最小间距
+            min_x_spacing = self.node_width + 0.8
+            min_y_spacing = self.node_height + 0.8
+            x_spacing = max(x_spacing, min_x_spacing)
+            y_spacing = max(y_spacing, min_y_spacing)
+            
+            # 按行优先计算节点位置
             for i, node in enumerate(nodes):
                 row = i // cols  # 当前行
                 col = i % cols   # 当前列
                 
-                # Calculate position / 计算位置
-                x = self.margin_x + x_spacing * (col + 0.5)
-                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                # 计算位置
+                x = self.margin_x + self.node_width/2 + col * x_spacing
+                y = canvas_height - self.margin_y - self.node_height/2 - row * y_spacing
                 
                 positions[node['id']] = (x, y)
         
         else:  # top-bottom
-            # Multi-column vertical layout / 多列垂直布局
-            # Calculate available space for nodes / 计算节点可用空间
+            # 垂直布局：优先纵向排列，确保间距均匀
             available_width = canvas_width - 2 * self.margin_x
             available_height = canvas_height - 2 * self.margin_y
             
-            # Calculate spacing between nodes / 计算节点间距
+            # 计算节点间的实际间距
             if cols > 1:
-                x_spacing = available_width / cols
+                total_node_width = cols * self.node_width
+                remaining_width = available_width - total_node_width
+                x_spacing_gap = remaining_width / (cols - 1) if cols > 1 else 0
+                x_spacing = self.node_width + x_spacing_gap
             else:
                 x_spacing = available_width
                 
             if rows > 1:
-                y_spacing = available_height / rows
+                total_node_height = rows * self.node_height
+                remaining_height = available_height - total_node_height
+                y_spacing_gap = remaining_height / (rows - 1) if rows > 1 else 0
+                y_spacing = self.node_height + y_spacing_gap
             else:
                 y_spacing = available_height
             
-            # Position nodes in grid layout / 网格布局放置节点
+            # 确保最小间距
+            min_x_spacing = self.node_width + 0.8
+            min_y_spacing = self.node_height + 0.8
+            x_spacing = max(x_spacing, min_x_spacing)
+            y_spacing = max(y_spacing, min_y_spacing)
+            
+            # 按列优先计算节点位置
             for i, node in enumerate(nodes):
                 col = i // rows  # 当前列
                 row = i % rows   # 当前行
                 
-                # Calculate position / 计算位置
-                x = self.margin_x + x_spacing * (col + 0.5)
-                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                # 计算位置
+                x = self.margin_x + self.node_width/2 + col * x_spacing
+                y = canvas_height - self.margin_y - self.node_height/2 - row * y_spacing
                 
                 positions[node['id']] = (x, y)
         
@@ -1328,9 +1412,9 @@ class OptimizedFlowchartGenerator:
         node_type = node.get('type', 'default')
         label = node.get('label', '')
         
-        # Truncate long labels / 截断长标签
-        if len(label) > 15:
-            label = label[:12] + "..."
+        # 优化文本处理：不截断，允许超出框体
+        # 但为太长的文本进行智能换行
+        display_label = self._format_text_for_display(label)
         
         # Get current theme / 获取当前主题
         theme = self.get_current_theme()
@@ -1358,11 +1442,64 @@ class OptimizedFlowchartGenerator:
         
         ax.add_patch(node_patch)
         
-        # Enhanced text rendering / 增强文本渲染
-        font_size = 9 if len(label) <= 8 else 8
-        ax.text(x, y, label, ha='center', va='center', fontsize=font_size,
-               weight='bold', wrap=True, fontproperties=self.chinese_font,
-               color=text_color, zorder=10)
+        # 增强文本渲染：支持多行和自适应字体大小
+        self._draw_enhanced_text(ax, x, y, display_label, text_color)
+        
+    def _format_text_for_display(self, text: str) -> str:
+        """
+        格式化文本以优化显示，支持智能换行
+        """
+        if not text:
+            return ''
+            
+        # 如果文本较短，直接返回
+        if len(text) <= 12:
+            return text
+            
+        # 对于中等长度文本，尝试智能换行
+        if len(text) <= 24:
+            # 查找合适的换行位置（空格、标点符号等）
+            mid_point = len(text) // 2
+            for i in range(mid_point - 3, mid_point + 4):
+                if i > 0 and i < len(text) and text[i] in ' 、。，：；':
+                    return text[:i+1] + '\n' + text[i+1:]
+            
+            # 如果没有找到合适的分割点，在中间分割
+            return text[:mid_point] + '\n' + text[mid_point:]
+        
+        # 对于较长文本，使用省略号但允许更多字符
+        return text[:20] + '...'
+    
+    def _draw_enhanced_text(self, ax, x: float, y: float, text: str, color: str):
+        """
+        增强文本渲染，支持多行和自适应字体大小
+        """
+        if not text:
+            return
+            
+        # 根据文本长度和行数调整字体大小
+        lines = text.split('\n')
+        max_line_length = max(len(line) for line in lines) if lines else 0
+        
+        if len(lines) == 1:
+            # 单行文本
+            if max_line_length <= 8:
+                font_size = 10
+            elif max_line_length <= 15:
+                font_size = 9
+            else:
+                font_size = 8
+        else:
+            # 多行文本
+            font_size = 8
+        
+        # 绘制文本，允许超出节点边界
+        ax.text(x, y, text, ha='center', va='center', 
+               fontsize=font_size, weight='bold', 
+               fontproperties=self.chinese_font,
+               color=color, zorder=10,
+               linespacing=0.9,  # 调整行间距
+               clip_on=False)     # 允许超出边界
     
     def _create_node_patch(self, x: float, y: float, shape: str, node_type: str, 
                           fill_color: str, border_color: str, alpha: float = 1.0):
