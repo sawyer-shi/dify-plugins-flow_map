@@ -69,32 +69,16 @@ A powerful flowchart generation plugin that converts Markdown and Mermaid syntax
    - Connect LLM output to FlowMap plugin input
 
 ### Basic Usage Examples
+<img width="1883" height="884" alt="flow_map_en_a_01" src="https://github.com/user-attachments/assets/9de1c2c2-8952-4282-8d06-3a3448bef01a" />
+<img width="2139" height="633" alt="flow_map_en_c_01" src="https://github.com/user-attachments/assets/655b0c59-3035-4936-ac1c-8f23c28c3210" />
 
-**Simple Mermaid Flowchart**
-```mermaid
-graph TD
-    A[Start] --> B[Process Data]
-    B --> C{Data Valid?}
-    C -->|Yes| D[Save Result]
-    C -->|No| E[Show Error]
-    D --> F[End]
-    E --> F
-```
+**Top-to-bottom layout**
+<img width="6453" height="5142" alt="flow_map_en_a_02" src="https://github.com/user-attachments/assets/52c7e645-4cd5-4fdd-a8df-c50b9740881e" />
+<img width="15777" height="3418" alt="flow_map_en_c_03" src="https://github.com/user-attachments/assets/526ab72d-221d-40bc-be64-d402d2ae79e6" />
 
-**Branching Decision Flow**
-```mermaid
-graph TD
-    A[Prepare Application] --> B[Choose Bank and Card Type]
-    B --> C[Fill Application Form]
-    C --> D[Submit Application]
-    D --> E[Bank Review]
-    E --> F{Review Result}
-    F -->|Approved| G[Sign Contract]
-    F -->|Rejected| H[Notify Applicant]
-    G --> I[Receive Credit Card]
-    I --> J[Activate Card]
-    J --> K[Use Credit Card]
-```
+**Left-to-right layout**
+<img width="6453" height="5142" alt="flow_map_en_a_03" src="https://github.com/user-attachments/assets/b969e429-45fb-40d5-987d-ce8bd4d8c02f" />
+<img width="7667" height="6874" alt="flow_map_en_c_02" src="https://github.com/user-attachments/assets/5ed9b3b4-5ca1-4171-8c5f-f04654c6efd5" />
 
 ## 📚 API Reference
 
@@ -280,32 +264,16 @@ If you encounter any issues or have questions:
    - 将LLM输出连接到FlowMap插件输入
 
 ### 基本使用示例
+<img width="2214" height="730" alt="flow_map_cn_a_01" src="https://github.com/user-attachments/assets/1b971d99-99e9-4686-9998-bba9fd26c0fd" />
+<img width="2169" height="678" alt="flow_map_cn_c_01" src="https://github.com/user-attachments/assets/be139d4c-e60a-48ab-9886-d48349451c2a" />
 
-**简单Mermaid流程图**
-```mermaid
-graph TD
-    A[开始] --> B[处理数据]
-    B --> C{数据有效?}
-    C -->|是| D[保存结果]
-    C -->|否| E[显示错误]
-    D --> F[结束]
-    E --> F
-```
+**上下布局**
+<img width="4177" height="7365" alt="flow_map_cn_a_02" src="https://github.com/user-attachments/assets/d2f8d83e-2b89-4fc1-8ec9-7ef90911bae4" />
+<img width="4847" height="4438" alt="flow_map_cn_c_03" src="https://github.com/user-attachments/assets/b960291a-5aa3-49b4-8220-4c863a924da0" />
 
-**分支决策流程**
-```mermaid
-graph TD
-    A[准备申请材料] --> B[选择银行和信用卡类型]
-    B --> C[填写申请表]
-    C --> D[提交申请材料]
-    D --> E[银行审核]
-    E --> F{审核结果}
-    F -->|通过| G[签署合同]
-    F -->|不通过| H[通知申请人]
-    G --> I[收到信用卡]
-    I --> J[激活信用卡]
-    J --> K[使用信用卡]
-```
+**左右布局**
+<img width="7412" height="4151" alt="flow_map_cn_a_03" src="https://github.com/user-attachments/assets/a8a93a4d-4126-4ccb-b6e7-22a2ca219062" />
+<img width="8700" height="2561" alt="flow_map_cn_c_02" src="https://github.com/user-attachments/assets/176dff9f-d249-487a-a45d-6a67532800f5" />
 
 ## 📚 API参考
 
