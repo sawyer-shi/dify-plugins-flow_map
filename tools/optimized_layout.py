@@ -551,9 +551,11 @@ class OptimizedFlowchartGenerator:
             arrow_patterns = [
                 # 1. 带标签箭头：A -->|标签| B (优先匹配)
                 r'(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?\s*-->\s*\|(.+?)\|\s*(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?',
-                # 2. 普通箭头：A --> B（源和目标都可能有标签）
+                # 2. 带标签箭头：A -- 标签 --> B (支持用户提供的语法)
+                r'(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?\s*--\s*([^-]+?)\s*-->\s*(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?',
+                # 3. 普通箭头：A --> B（源和目标都可能有标签）
                 r'(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?\s*-->\s*(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?',
-                # 3. 简化箭头：A --> B（备用模式）
+                # 4. 简化箭头：A --> B（备用模式）
                 r'(\w+)\s*-->\s*(\w+)(\[.*?\]|\{.*?\}|\(.*?\))?'
             ]
             
@@ -574,7 +576,16 @@ class OptimizedFlowchartGenerator:
                             to_label = groups[4] if groups[4] else None
                         else:
                             continue  # 跳过不合法的匹配
-                    elif pattern_index == 1:  # 普通箭头模式：A --> B（源和目标都可能有标签）
+                    elif pattern_index == 1:  # 带标签箭头模式：A -- 标签 --> B
+                        if len(groups) >= 5:
+                            from_id = groups[0]
+                            from_label = groups[1] if groups[1] else None
+                            connection_label = groups[2].strip()  # 箭头标签，去除空格
+                            to_id = groups[3]
+                            to_label = groups[4] if groups[4] else None
+                        else:
+                            continue  # 跳过不合法的匹配
+                    elif pattern_index == 2:  # 普通箭头模式：A --> B（源和目标都可能有标签）
                         if len(groups) >= 4:
                             from_id = groups[0]
                             from_label = groups[1] if groups[1] else None
@@ -583,7 +594,7 @@ class OptimizedFlowchartGenerator:
                             connection_label = ''  # 无标签
                         else:
                             continue  # 跳过不合法的匹配
-                    else:  # pattern_index == 2, 简化箭头模式：A --> B
+                    else:  # pattern_index == 3, 简化箭头模式：A --> B
                         if len(groups) >= 2:
                             from_id = groups[0]
                             from_label = None
