@@ -171,17 +171,6 @@ flow_map/
 # This will create flow_map-0.0.1.difypkg
 ```
 
-### Running Tests
-
-```bash
-# Navigate to project directory
-cd flow_map
-
-# Run specific tests
-python test/test_branch_optimization.py
-python test/test_free_layout.py
-python test/test_user_example_final.py
-```
 
 ## 🔍 Technical Details
 
@@ -393,17 +382,6 @@ flow_map/
 # 这将创建 flow_map-0.0.1.difypkg 文件
 ```
 
-### 运行测试
-
-```bash
-# 进入项目目录
-cd flow_map
-
-# 运行特定测试
-python test/test_branch_optimization.py
-python test/test_free_layout.py
-python test/test_user_example_final.py
-```
 
 ## 🔍 技术细节
 
