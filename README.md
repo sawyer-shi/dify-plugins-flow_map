@@ -18,7 +18,7 @@
 
 ## Description
 
-A powerful flowchart generation plugin that converts Markdown and Mermaid syntax to beautiful, intelligent flowcharts with advanced layout optimization and branch-aware positioning.
+A powerful flowchart generation plugin that converts Mermaid syntax to beautiful, intelligent flowcharts with advanced layout optimization and branch-aware positioning.
 
 ## ✨ Key Features
 
@@ -213,7 +213,7 @@ If you encounter any issues or have questions:
 
 ## 描述
 
-一个强大的流程图生成插件，将Markdown和Mermaid语法转换为美观、智能的流程图，具有高级布局优化和分支感知定位功能。
+一个强大的流程图生成插件，将Mermaid语法转换为美观、智能的流程图，具有高级布局优化和分支感知定位功能。
 
 ## ✨ 核心功能
 
