@@ -111,15 +111,6 @@ The plugin automatically detects branching scenarios in your flowchart and switc
 - **Linear Flow**: Uses grid layout for optimal alignment
 - **Branching Flow**: Uses free layout to prevent overlap
 
-### Colorful Arrow Labels
-
-Supports labeled arrows with intelligent color mapping:
-
-```mermaid
-F -->|Approved| G    # Green arrow for positive outcomes
-F -->|Rejected| H    # Red arrow for negative outcomes
-F -->|Pending| I     # Orange arrow for pending states
-```
 
 ### Theme Customization
 
@@ -305,16 +296,6 @@ If you encounter any issues or have questions:
 
 - **线性流程**: 使用网格布局实现最优对齐
 - **分支流程**: 使用自由布局防止重叠
-
-### 彩色箭头标签
-
-支持带标签的箭头和智能颜色映射：
-
-```mermaid
-F -->|通过| G    # 正面结果使用绿色箭头
-F -->|不通过| H  # 负面结果使用红色箭头
-F -->|待定| I    # 待定状态使用橙色箭头
-```
 
 ### 主题定制
 
