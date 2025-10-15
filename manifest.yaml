@@ -1,5 +1,8 @@
 version: 0.0.2
 type: plugin
+tags: 
+  - productivity
+  - image
 author: sawyer-shi
 name: flow_map
 label:
@@ -14,7 +17,23 @@ description:
   pt_BR: Gere fluxogramas a partir de texto Mermaid localmente, suportando direções de layout esquerda-direita e cima-baixo.
 icon: icon.png
 resource:
-  memory: 268435456
+  memory: 104857600
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    endpoint:
+      enabled: true
+    app:
+      enabled: true
+    storage:
+      enabled: true
+      size: 104857600
 plugins:
   tools:
     - provider/flow_map.yaml
