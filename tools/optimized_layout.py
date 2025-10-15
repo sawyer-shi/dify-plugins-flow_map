@@ -448,14 +448,9 @@ class OptimizedFlowchartGenerator:
             
             if use_english_layout:
                 # 使用英文专用布局算法（仅限无分支的复杂英文文本）
-                print(f"[DEBUG] Using English grid layout for complex English text (avg_len: {text_analysis['avg_text_length']:.1f}, no branches)")
                 file_path = self.english_generator.generate_english_flowchart(nodes, connections, layout, "mermaid")
             else:
                 # 使用标准布局算法（包括英文分支流程图）
-                if structure_analysis['has_branches']:
-                    print(f"[DEBUG] Using standard FREE layout for branching flowchart (english: {text_analysis['is_primarily_english']}, branches: {len(structure_analysis['branch_nodes'])})")
-                else:
-                    print(f"[DEBUG] Using standard GRID layout for linear flowchart (english: {text_analysis['is_primarily_english']})")
                 file_path = self._generate_compact_flowchart(nodes, connections, layout, "mermaid")
             
             return {
@@ -1207,11 +1202,9 @@ class OptimizedFlowchartGenerator:
         structure_analysis = self._analyze_flowchart_structure(nodes, connections)
         if structure_analysis['has_branches']:
             # Use free layout for branching scenarios / 分支场景使用自由布局
-            print(f"[DEBUG] Using FREE LAYOUT for branching flowchart (branches: {len(structure_analysis['branch_nodes'])})")
             positions = self._calculate_free_layout_positions(nodes, connections, layout, canvas_width, canvas_height)
         else:
             # Use grid layout with L-turn connections for linear scenarios / 线性场景使用网格布局+L转弯连接
-            print(f"[DEBUG] Using GRID LAYOUT with L-turn connections for linear flowchart")
             positions = self._calculate_branch_aware_positions(nodes, connections, layout, canvas_width, canvas_height, rows, cols)
         
         # Draw nodes / 绘制节点
