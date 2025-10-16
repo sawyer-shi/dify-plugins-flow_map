@@ -1,0 +1,34 @@
+identity:
+  name: "mermaid_free"
+  author: "sawyer-shi"
+  label:
+    en_US: "Flowchart - Free Layout"
+    zh_Hans: "流程图 - 自由布局"
+    pt_BR: "Fluxograma → Layout Livre"
+    ja_JP: "フローチャート → フリーレイアウト"
+description:
+  human:
+    en_US: "Generate free layout flowcharts or other chart types from any Mermaid syntax."
+    zh_Hans: "从任何Mermaid语法生成自由布局流程图或者其他图表类型。"
+    pt_BR: "Gere fluxogramas de layout livre ou outros tipos de gráficos de qualquer sintaxe Mermaid."
+    ja_JP: "任意のMermaid構文からフリーレイアウトフローチャートまたはその他のチャートタイプを生成します。"
+  llm: "Generate free layout flowcharts or other chart types from any Mermaid syntax with automatic language detection and optimized layout. Supports all Mermaid chart types with classic styling."
+parameters:
+  - name: text
+    type: string
+    required: true
+    label:
+      en_US: Mermaid Syntax
+      zh_Hans: Mermaid语法
+      pt_BR: Sintaxe Mermaid
+      ja_JP: Mermaid構文
+    human_description:
+      en_US: "Enter any Mermaid syntax for free layout visualization of flowcharts or other chart types with automatic language detection"
+      zh_Hans: "输入任何Mermaid语法，自动检测语言并生成自由布局的流程图或其他图表类型"
+      pt_BR: "Insira qualquer sintaxe Mermaid para visualização de layout livre de fluxogramas ou outros tipos de gráficos com detecção automática de idioma"
+      ja_JP: "自動言語検出付きでフリーレイアウトのフローチャートまたはその他のチャートタイプを表示する任意のMermaid構文を入力"
+    llm_description: "Any Mermaid syntax that will be rendered as flowcharts or other chart types with optimized free layout based on language detection"
+    form: llm
+extra:
+  python:
+    source: tools/mermaid_free.py

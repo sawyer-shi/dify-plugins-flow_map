@@ -15,6 +15,7 @@ identity:
 tools:
   - tools/mermaid_lr.yaml
   - tools/mermaid_tb.yaml
+  - tools/mermaid_free.yaml
 extra:
   python:
     source: provider/flow_map.py
