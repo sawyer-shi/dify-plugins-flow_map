@@ -38,12 +38,28 @@ class MermaidParser:
                 # 暂不处理子图结构，内容仍按普通语句解析
                 continue
 
-            # 提取并移除边标签（按出现顺序记录）
-            edge_labels = re.findall(r"\|(.*?)\|", line)
-            line_wo_labels = re.sub(r"\|(.*?)\|", "", line)
-
             # 判断是否是连接语句
-            if self._contains_connector(line_wo_labels):
+            if self._contains_connector(line):
+                # 提取边标签 - 支持两种格式：A -->|是| B 和 A --是--> B
+                # 先处理 |标签| 格式
+                edge_labels = re.findall(r"\|(.*?)\|", line)
+                line_wo_labels = re.sub(r"\|(.*?)\|", "", line)
+                
+                # 再处理连接符中间的标签格式，如 A --是--> B
+                # 使用正则表达式匹配连接符中间的文本
+                connector_labels = re.findall(r'--([^->]+?)-->|->([^->]+?)->|--([^->]+?)--|==([^=]+?)==>', line_wo_labels)
+                # 合并所有标签
+                for label_match in connector_labels:
+                    for label in label_match:
+                        if label.strip():  # 只添加非空标签
+                            edge_labels.append(label.strip())
+                
+                # 移除连接符中间的标签，便于后续处理
+                line_wo_labels = re.sub(r'--[^->]+?-->', '-->', line_wo_labels)
+                line_wo_labels = re.sub(r'->[^->]+?->', '->', line_wo_labels)
+                line_wo_labels = re.sub(r'--[^->]+?--', '--', line_wo_labels)
+                line_wo_labels = re.sub(r'==[^=]+?==>', '==>', line_wo_labels)
+                
                 parts = self._split_by_connectors(line_wo_labels)
                 # parts 形如 [node, op, node, op, node]
                 label_idx = 0
@@ -120,30 +136,12 @@ class MermaidParser:
         return "\n".join(lines)
     
     def _detect_chart_type_and_dir(self, code: str) -> Tuple[str, str]:
-        """检测图表类型和方向"""
+        """检测图表类型和方向，仅支持流程图"""
         first_line = code.split("\n")[0].lower() if code else ""
         
-        # 默认类型和方向
+        # 只支持流程图类型，任何输入都视为流程图
         chart_type = "flowchart"
         direction = "TD"  # Top to Down
-        
-        # 检测图表类型
-        if "graph" in first_line:
-            chart_type = "flowchart"
-        elif "sequencediagram" in first_line:
-            chart_type = "sequence"
-        elif "classdiagram" in first_line:
-            chart_type = "class"
-        elif "statediagram" in first_line:
-            chart_type = "state"
-        elif "erdiagram" in first_line:
-            chart_type = "er"
-        elif "gantt" in first_line:
-            chart_type = "gantt"
-        elif "pie" in first_line:
-            chart_type = "pie"
-        elif "journey" in first_line:
-            chart_type = "journey"
         
         # 检测方向
         if "td" in first_line or "tb" in first_line:

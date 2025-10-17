@@ -9,8 +9,12 @@ This module contains utility functions and tools for the flow map plugin.
 
 from .mermaid_lr import MermaidLRTool
 from .mermaid_tb import MermaidTBTool
+from .mermaid_free import MermaidFreeTool
+from .free_layout_renderer import FreeLayoutRenderer
 
 __all__ = [
     'MermaidLRTool',
-    'MermaidTBTool'
+    'MermaidTBTool',
+    'MermaidFreeTool',
+    'FreeLayoutRenderer'
 ]
