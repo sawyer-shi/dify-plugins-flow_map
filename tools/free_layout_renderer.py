@@ -88,7 +88,7 @@ class FreeLayoutRenderer:
             for i, node in enumerate(nodes):
                 positions[node["id"]] = (i * 150 + 100, i * 100 + 100)
         
-        # 计算画布边界 - 增加更大的边距以确保所有元素都在画布内
+        # 计算画布边界
         min_x = min(pos[0] for pos in positions.values()) - 100
         max_x = max(pos[0] for pos in positions.values()) + 100
         min_y = min(pos[1] for pos in positions.values()) - 100
@@ -124,7 +124,7 @@ class FreeLayoutRenderer:
         for node_id, pos in positions.items():
             adjusted_positions[node_id] = (pos[0] - min_x, pos[1] - min_y)
         
-        # 绘制连接线
+        # 绘制连接线（先不绘制边标签）
         for edge in edges:
             from_pos = adjusted_positions.get(edge["from"])
             to_pos = adjusted_positions.get(edge["to"])
@@ -148,11 +148,6 @@ class FreeLayoutRenderer:
                 else:
                     # 默认绘制带箭头的线
                     self._draw_arrow_line(draw, from_pos, to_pos)
-                
-                # 绘制边标签（如果有）
-                label = edge.get("label", "")
-                if label:
-                    self._draw_edge_label(draw, from_pos, to_pos, label, font)
         
         # 绘制节点
         for node in nodes:
@@ -163,6 +158,17 @@ class FreeLayoutRenderer:
                 
                 # 绘制节点
                 self._draw_node(draw, node, pos, font)
+        
+        # 最后绘制边标签（确保在节点之上）
+        for edge in edges:
+            from_pos = adjusted_positions.get(edge["from"])
+            to_pos = adjusted_positions.get(edge["to"])
+            
+            if from_pos and to_pos:
+                # 绘制边标签（如果有）
+                label = edge.get("label", "")
+                if label:
+                    self._draw_edge_label(draw, from_pos, to_pos, label, font)
         
         # 保存图像
         image.save(output_path)
@@ -178,8 +184,8 @@ class FreeLayoutRenderer:
         shape = node.get("shape", "rectangle")
         node_type = node.get("node_type", "")
         
-        # 获取节点大小
-        width = 120
+        # 获取节点大小 - 与布局算法保持一致
+        width = 140
         height = 60
         
         # 根据节点形状绘制
@@ -508,8 +514,8 @@ class FreeLayoutRenderer:
             to_pos: 结束位置
         """
         # 计算节点边缘的位置（避免箭头被节点遮挡）
-        # 假设节点大小为120x60，所以半径约为60和30
-        node_radius_x = 60
+        # 假设节点大小为140x60，所以半径约为70和30
+        node_radius_x = 70  # width/2
         node_radius_y = 30
         
         # 计算方向向量
@@ -559,8 +565,8 @@ class FreeLayoutRenderer:
             to_pos: 结束位置
         """
         # 计算节点边缘的位置（避免箭头被节点遮挡）
-        # 假设节点大小为120x60，所以半径约为60和30
-        node_radius_x = 60
+        # 假设节点大小为140x60，所以半径约为70和30
+        node_radius_x = 70  # width/2
         node_radius_y = 30
         
         # 计算方向向量
@@ -629,8 +635,8 @@ class FreeLayoutRenderer:
             to_pos: 结束位置
         """
         # 计算节点边缘的位置（避免箭头被节点遮挡）
-        # 假设节点大小为120x60，所以半径约为60和30
-        node_radius_x = 60
+        # 假设节点大小为140x60，所以半径约为70和30
+        node_radius_x = 70  # width/2
         node_radius_y = 30
         
         # 计算方向向量

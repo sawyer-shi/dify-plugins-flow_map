@@ -26,7 +26,7 @@ class MermaidFreeTool(Tool):
     """
     流程图 - 自由布局工具
     仅支持Mermaid流程图语法，为中文和英文分别编写单独的布局算法
-    仅使用Mermaid默认最经典简单的绘图风格
+    使用默认经典绘图风格
     """
     
     def __init__(self, runtime, session, **kwargs):
@@ -49,10 +49,6 @@ class MermaidFreeTool(Tool):
                 )
                 return
             
-            # 获取图表风格选项，默认为经典风格
-            chart_style = tool_parameters.get("style", "classic")
-            is_hand_drawn = (chart_style == "hand_drawn")
-            
             # 检测语言类型
             is_chinese = self._detect_chinese(mermaid_code)
             
@@ -62,8 +58,8 @@ class MermaidFreeTool(Tool):
             # 使用布局管理器进行布局
             positions = self.layout_manager.layout(elements, chart_type, is_chinese)
             
-            # 生成图像
-            image_path = self._generate_image(chart_type, elements, positions, is_chinese, is_hand_drawn)
+            # 生成图像 - 使用默认风格
+            image_path = self._generate_image(chart_type, elements, positions, is_chinese)
             
             # 读取生成的PNG文件并返回为blob
             with open(image_path, "rb") as f:
@@ -79,20 +75,18 @@ class MermaidFreeTool(Tool):
             
             # 准备包含流程图信息的JSON数据
             layout_type = "Chinese" if is_chinese else "English"
-            style_type = "Hand Drawn" if is_hand_drawn else "Classic"
             json_data = {
                 "layout_type": "free",
                 "nodes_count": nodes_count,
                 "connections_count": connections_count,
                 "file_size_bytes": file_size_bytes,
                 "file_size_mb": round(file_size_mb, 2),
-                "style": chart_style,
                 "language": layout_type,
                 "success": True
             }
             
             # 生成成功消息
-            success_text = f"Successfully generated {style_type} free layout flowchart with {layout_type} layout optimization. File size: {file_size_mb:.2f}M. Contains {nodes_count} nodes and {connections_count} connections."
+            success_text = f"Successfully generated free layout flowchart with {layout_type} layout optimization. File size: {file_size_mb:.2f}M. Contains {nodes_count} nodes and {connections_count} connections."
             
             # 先返回文本消息
             yield self.create_text_message(success_text)
@@ -105,7 +99,7 @@ class MermaidFreeTool(Tool):
                 png_data, 
                 meta={
                     "mime_type": "image/png",
-                    "filename": f"free_layout_mermaid_free_{layout_type.lower()}_{chart_style}.png"
+                    "filename": f"free_layout_mermaid_flowchart_{layout_type.lower()}.png"
                 }
             )
             
@@ -146,7 +140,7 @@ class MermaidFreeTool(Tool):
         return node_str.split('[')[0].split('(')[0].strip()
     
     def _generate_image(self, chart_type: str, elements: List[Dict[str, Any]], 
-                       positions: Dict[str, Tuple[int, int]], is_chinese: bool, is_hand_drawn: bool = False) -> str:
+                       positions: Dict[str, Tuple[int, int]], is_chinese: bool) -> str:
         """
         生成图像并返回文件路径
         """

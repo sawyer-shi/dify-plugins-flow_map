@@ -17,10 +17,10 @@ class FlowchartLayout:
     """
     
     def __init__(self):
-        # 默认布局参数
+        # 默认布局参数 - 增加间距避免重叠
         self.node_width = 140
         self.node_height = 60
-        self.horizontal_spacing = 180
+        self.horizontal_spacing = 220  # 增加水平间距，避免节点重叠
         self.vertical_spacing = 100
         self.margin = 50
     
@@ -101,10 +101,36 @@ class FlowchartLayout:
                     if in_degree[neighbor_id] == 0 and neighbor_id not in visited:
                         queue.append(neighbor_id)
         
-        # 处理可能存在的环（将剩余节点添加到最后一个层级）
+        # 处理可能存在的环（将剩余节点添加到不同层级，避免重叠）
         remaining_nodes = [node["id"] for node in nodes if node["id"] not in visited]
         if remaining_nodes:
-            levels.append(remaining_nodes)
+            # 对于环中的节点，尝试根据它们在图中的位置分配到不同层级
+            # 简单策略：根据连接关系，将环中节点分散到不同层级
+            for node_id in remaining_nodes:
+                # 找到该节点连接的已访问节点
+                connected_visited = [n for n in adjacency[node_id] if n in visited]
+                if connected_visited:
+                    # 找到连接节点中最小的层级
+                    min_level = float('inf')
+                    for n in connected_visited:
+                        for i, level in enumerate(levels):
+                            if n in level:
+                                min_level = min(min_level, i)
+                                break
+                    
+                    # 将当前节点放在最小层级的下一层
+                    if min_level + 1 < len(levels):
+                        levels[min_level + 1].append(node_id)
+                    else:
+                        levels.append([node_id])
+                else:
+                    # 如果没有连接到已访问节点，放在最后
+                    if len(levels) > 0:
+                        levels[-1].append(node_id)
+                    else:
+                        levels.append([node_id])
+                
+                visited.add(node_id)
         
         return levels
     
@@ -124,7 +150,7 @@ class FlowchartLayout:
         # 计算每层的最大宽度
         max_level_width = max(len(level) for level in levels) if levels else 0
         
-        # 计算画布宽度
+        # 计算画布宽度和高度
         canvas_width = max_level_width * self.horizontal_spacing + 2 * self.margin
         canvas_height = len(levels) * self.vertical_spacing + 2 * self.margin
         
@@ -136,6 +162,7 @@ class FlowchartLayout:
             level_width = len(level) * self.horizontal_spacing
             start_x = (canvas_width - level_width) / 2 + self.horizontal_spacing / 2
             
+            # 检查与前面层级的节点是否重叠，如果重叠则调整
             for node_idx, node_id in enumerate(level):
                 if is_chinese:
                     # 中文布局：从右到左
@@ -143,6 +170,45 @@ class FlowchartLayout:
                 else:
                     # 英文布局：从左到右
                     node_x = start_x + node_idx * self.horizontal_spacing
+                
+                # 检查与前面层级的节点是否重叠
+                overlap = True
+                attempts = 0
+                
+                while overlap and attempts < 10:  # 最多尝试10次调整
+                    overlap = False
+                    # 检查与前面层级的节点是否重叠
+                    for prev_level_idx in range(level_idx):
+                        for prev_node_id in levels[prev_level_idx]:
+                            if prev_node_id in positions:
+                                prev_x, prev_y = positions[prev_node_id]
+                                # 检查是否与前面层级的节点重叠
+                                # 考虑节点大小，检查矩形区域是否重叠
+                                node_left = node_x - self.node_width / 2
+                                node_right = node_x + self.node_width / 2
+                                node_top = level_y - self.node_height / 2
+                                node_bottom = level_y + self.node_height / 2
+                                
+                                prev_left = prev_x - self.node_width / 2
+                                prev_right = prev_x + self.node_width / 2
+                                prev_top = prev_y - self.node_height / 2
+                                prev_bottom = prev_y + self.node_height / 2
+                                
+                                # 检查矩形区域是否重叠
+                                # 两个矩形重叠的条件是：一个矩形的左边小于另一个矩形的右边，且右边大于另一个矩形的左边
+                                # 对于垂直方向，我们放宽条件，只要两个节点在同一列（水平重叠）就认为重叠
+                                horizontal_overlap = (node_left < prev_right and node_right > prev_left)
+                                # 垂直方向放宽条件，只要节点在同一列（水平重叠）就认为可能重叠
+                                vertical_overlap = (node_top < prev_bottom and node_bottom > prev_top) or (abs(node_x - prev_x) < 10)  # x坐标相近也认为可能重叠
+                                
+                                if horizontal_overlap and vertical_overlap:
+                                    overlap = True
+                                    # 调整x坐标，向右移动
+                                    node_x += self.horizontal_spacing / 2
+                                    break
+                        if overlap:
+                            break
+                    attempts += 1
                 
                 positions[node_id] = (int(node_x), int(level_y))
         

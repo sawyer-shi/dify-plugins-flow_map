@@ -8,11 +8,11 @@ identity:
     ja_JP: "フローチャート → フリーレイアウト"
 description:
   human:
-    en_US: "Generate free layout flowcharts from Mermaid graph syntax."
-    zh_Hans: "从Mermaid图形语法生成自由布局流程图。"
-    pt_BR: "Gere fluxogramas de layout livre de qualquer sintaxe Mermaid."
-    ja_JP: "任意のMermaid構文からフリーレイアウトフローチャートを生成します。"
-  llm: "Generate free layout flowcharts from Mermaid graph syntax with automatic language detection and optimized layout. Supports flowcharts with classic styling."
+    en_US: "Generate free layout flowcharts from Mermaid flowchart syntax (graph TD/LR)."
+    zh_Hans: "从Mermaid流程图语法（graph TD/LR）生成自由布局流程图。"
+    pt_BR: "Gere fluxogramas de layout livre da sintaxe do fluxograma Mermaid (graph TD/LR)."
+    ja_JP: "Mermaidフローチャート構文（graph TD/LR）からフリーレイアウトフローチャートを生成します。"
+  llm: "Generate free layout flowcharts from Mermaid flowchart syntax (graph TD/LR) with optimized layout. Supports flowcharts with classic styling."
 parameters:
   - name: text
     type: string
@@ -23,41 +23,12 @@ parameters:
       pt_BR: Sintaxe Mermaid
       ja_JP: Mermaid構文
     human_description:
-      en_US: "Enter Mermaid graph syntax for free layout visualization of flowcharts with automatic language detection"
-      zh_Hans: "输入Mermaid图形语法，自动检测语言并生成自由布局的流程图"
-      pt_BR: "Insira qualquer sintaxe Mermaid para visualização de layout livre de fluxogramas com detecção automática de idioma"
-      ja_JP: "自動言語検出付きでフリーレイアウトのフローチャートを表示する任意のMermaid構文を入力"
-    llm_description: "Mermaid graph syntax that will be rendered as flowcharts with optimized free layout based on language detection"
+      en_US: "Enter Mermaid flowchart syntax (graph TD/LR) to generate free layout visualization"
+      zh_Hans: "输入Mermaid流程图语法（graph TD/LR）生成自由布局可视化"
+      pt_BR: "Insira a sintaxe do fluxograma Mermaid (graph TD/LR) para gerar visualização de layout livre"
+      ja_JP: "Mermaidフローチャート構文（graph TD/LR）を入力して、自由レイアウトの可視化を生成"
+    llm_description: "Mermaid flowchart syntax (graph TD/LR) that will be rendered as flowcharts with optimized free layout"
     form: llm
-  - name: style
-    type: select
-    required: false
-    label:
-      en_US: Chart Style
-      zh_Hans: 图表风格
-      pt_BR: Estilo do Gráfico
-      ja_JP: チャートスタイル
-    human_description:
-      en_US: "Choose the visual style for the generated chart"
-      zh_Hans: "选择生成图表的视觉风格"
-      pt_BR: "Escolha o estilo visual para o gráfico gerado"
-      ja_JP: "生成されたチャートのビジュアルスタイルを選択"
-    llm_description: "Visual style option for the chart rendering"
-    form: form
-    default: "classic"
-    options:
-      - value: "classic"
-        label:
-          en_US: Classic
-          zh_Hans: 经典风格
-          pt_BR: Clássico
-          ja_JP: クラシック
-      - value: "hand_drawn"
-        label:
-          en_US: Hand Drawn
-          zh_Hans: 手绘风格
-          pt_BR: Desenho à Mão
-          ja_JP: 手描き
 extra:
   python:
     source: tools/mermaid_free.py
