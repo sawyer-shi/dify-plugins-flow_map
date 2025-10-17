@@ -12,7 +12,7 @@ description:
     zh_Hans: "从Mermaid图形语法生成上下布局流程图，支持节点连接。"
     pt_BR: "Gere fluxogramas de cima para baixo a partir da sintaxe de gráfico Mermaid com conexões de nós."
     ja_JP: "ノード接続を持つMermaidグラフ構文から上下レイアウトのフローチャートを生成。"
-  llm: "Generate vertical (top-to-bottom) flowcharts from Mermaid syntax. Perfect for decision trees and hierarchical structures."
+  llm: "Generate vertical (top-to-bottom) flowcharts from Mermaid graph syntax. Perfect for decision trees and hierarchical structures."
 parameters:
   - name: text
     type: string

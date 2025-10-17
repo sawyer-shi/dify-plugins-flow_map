@@ -73,13 +73,32 @@ class MermaidFreeTool(Tool):
             file_size_bytes = len(png_data)
             file_size_mb = file_size_bytes / (1024 * 1024)
             
-            # 生成成功消息
+            # 统计节点和连接数
+            nodes_count = len([e for e in elements if e['type'] == 'node'])
+            connections_count = len([e for e in elements if e['type'] == 'edge'])
+            
+            # 准备包含流程图信息的JSON数据
             layout_type = "Chinese" if is_chinese else "English"
             style_type = "Hand Drawn" if is_hand_drawn else "Classic"
-            success_text = f"Successfully generated {style_type} free layout flowchart with {layout_type} layout optimization. File size: {file_size_mb:.2f}M. Contains {len([e for e in elements if e['type'] == 'node'])} nodes and {len([e for e in elements if e['type'] == 'edge'])} connections."
+            json_data = {
+                "layout_type": "free",
+                "nodes_count": nodes_count,
+                "connections_count": connections_count,
+                "file_size_bytes": file_size_bytes,
+                "file_size_mb": round(file_size_mb, 2),
+                "style": chart_style,
+                "language": layout_type,
+                "success": True
+            }
+            
+            # 生成成功消息
+            success_text = f"Successfully generated {style_type} free layout flowchart with {layout_type} layout optimization. File size: {file_size_mb:.2f}M. Contains {nodes_count} nodes and {connections_count} connections."
             
             # 先返回文本消息
             yield self.create_text_message(success_text)
+            
+            # 返回包含流程图详细信息的JSON消息
+            yield self.create_json_message(json_data)
             
             # 返回PNG文件作为blob带元数据
             yield self.create_blob_message(

@@ -12,7 +12,7 @@ description:
     zh_Hans: "从Mermaid图形语法生成左右布局流程图，支持节点连接。"
     pt_BR: "Gere fluxogramas da esquerda para a direita a partir da sintaxe de gráfico Mermaid com conexões de nós."
     ja_JP: "ノード接続を持つMermaidグラフ構文から左右レイアウトのフローチャートを生成。"
-  llm: "Generate horizontal (left-to-right) flowcharts from Mermaid syntax. Great for complex workflows with branches and loops."
+  llm: "Generate horizontal (left-to-right) flowcharts from Mermaid graph syntax. Great for complex workflows with branches and loops."
 parameters:
   - name: text
     type: string

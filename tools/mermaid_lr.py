@@ -58,11 +58,25 @@ class MermaidLRTool(Tool):
                 file_size_bytes = len(png_data)
                 file_size_mb = file_size_bytes / (1024 * 1024)
                 
+                # Prepare JSON data with flowchart information / 准备包含流程图信息的JSON数据
+                json_data = {
+                    "layout_type": "left-right",
+                    "nodes_count": result.get('nodes_count', 0),
+                    "connections_count": result.get('connections_count', 0),
+                    "file_size_bytes": file_size_bytes,
+                    "file_size_mb": round(file_size_mb, 2),
+                    "theme": theme,
+                    "success": True
+                }
+                
                 # Generate success message / 生成成功消息
                 success_text = f"Successfully generated left-right layout flowchart. File size: {file_size_mb:.2f}M. Contains {result.get('nodes_count', 0)} nodes and {result.get('connections_count', 0)} connections."
                 
                 # Return text message first / 先返回文本消息
                 yield self.create_text_message(success_text)
+                
+                # Return JSON message with flowchart details / 返回包含流程图详细信息的JSON消息
+                yield self.create_json_message(json_data)
                 
                 # Return PNG file as blob with metadata / 返回PNG文件作为blob带元数据
                 yield self.create_blob_message(

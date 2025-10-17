@@ -8,11 +8,11 @@ identity:
     ja_JP: "フローチャート → フリーレイアウト"
 description:
   human:
-    en_US: "Generate free layout flowcharts from any Mermaid syntax."
-    zh_Hans: "从任何Mermaid语法生成自由布局流程图。"
+    en_US: "Generate free layout flowcharts from Mermaid graph syntax."
+    zh_Hans: "从Mermaid图形语法生成自由布局流程图。"
     pt_BR: "Gere fluxogramas de layout livre de qualquer sintaxe Mermaid."
     ja_JP: "任意のMermaid構文からフリーレイアウトフローチャートを生成します。"
-  llm: "Generate free layout flowcharts from any Mermaid syntax with automatic language detection and optimized layout. Supports flowcharts with classic styling."
+  llm: "Generate free layout flowcharts from Mermaid graph syntax with automatic language detection and optimized layout. Supports flowcharts with classic styling."
 parameters:
   - name: text
     type: string
@@ -23,11 +23,11 @@ parameters:
       pt_BR: Sintaxe Mermaid
       ja_JP: Mermaid構文
     human_description:
-      en_US: "Enter any Mermaid syntax for free layout visualization of flowcharts with automatic language detection"
-      zh_Hans: "输入任何Mermaid语法，自动检测语言并生成自由布局的流程图"
+      en_US: "Enter Mermaid graph syntax for free layout visualization of flowcharts with automatic language detection"
+      zh_Hans: "输入Mermaid图形语法，自动检测语言并生成自由布局的流程图"
       pt_BR: "Insira qualquer sintaxe Mermaid para visualização de layout livre de fluxogramas com detecção automática de idioma"
       ja_JP: "自動言語検出付きでフリーレイアウトのフローチャートを表示する任意のMermaid構文を入力"
-    llm_description: "Any Mermaid syntax that will be rendered as flowcharts with optimized free layout based on language detection"
+    llm_description: "Mermaid graph syntax that will be rendered as flowcharts with optimized free layout based on language detection"
     form: llm
   - name: style
     type: select
