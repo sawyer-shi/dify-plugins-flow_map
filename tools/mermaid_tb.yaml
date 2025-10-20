@@ -8,10 +8,10 @@ identity:
     ja_JP: "フローチャート ↓ 上下レイアウト"
 description:
   human:
-    en_US: "Generate top-bottom flowcharts from Mermaid graph syntax with node connections."
-    zh_Hans: "从Mermaid图形语法生成上下布局流程图，支持节点连接。"
-    pt_BR: "Gere fluxogramas de cima para baixo a partir da sintaxe de gráfico Mermaid com conexões de nós."
-    ja_JP: "ノード接続を持つMermaidグラフ構文から上下レイアウトのフローチャートを生成。"
+    en_US: "Enter Mermaid flowchart syntax (graph TD/LR) text information to generate vertical layout visualization flowchart."
+    zh_Hans: "输入Mermaid流程图语法（graph TD/LR）文本信息，生成垂直布局可视化流程图。"
+    pt_BR: "Insira informações de texto da sintaxe do fluxograma Mermaid (graph TD/LR) para gerar fluxograma de visualização de layout vertical."
+    ja_JP: "Mermaidフローチャート構文（graph TD/LR）テキスト情報を入力して、垂直レイアウトの可視化フローチャートを生成。"
   llm: "Generate vertical (top-to-bottom) flowcharts from Mermaid graph syntax. Perfect for decision trees and hierarchical structures."
 parameters:
   - name: text
@@ -23,10 +23,10 @@ parameters:
       pt_BR: Sintaxe Mermaid
       ja_JP: Mermaid構文
     human_description:
-      en_US: "Enter Mermaid flowchart syntax (graph TD/LR) for vertical layout visualization"
-      zh_Hans: "输入Mermaid流程图语法（graph TD/LR）生成垂直布局可视化"
-      pt_BR: "Insira a sintaxe do fluxograma Mermaid (graph TD/LR) para visualização em layout vertical"
-      ja_JP: "垂直レイアウト表示用のMermaidフローチャート構文（graph TD/LR）を入力"
+      en_US: "Enter Mermaid flowchart syntax (graph TD/LR) text information to generate vertical layout visualization flowchart"
+      zh_Hans: "输入Mermaid流程图语法（graph TD/LR）文本信息，生成垂直布局可视化流程图"
+      pt_BR: "Insira informações de texto da sintaxe do fluxograma Mermaid (graph TD/LR) para gerar fluxograma de visualização de layout vertical"
+      ja_JP: "Mermaidフローチャート構文（graph TD/LR）テキスト情報を入力して、垂直レイアウトの可視化フローチャートを生成"
     llm_description: "Mermaid flowchart syntax that will be rendered in vertical top-to-bottom layout regardless of graph direction"
     form: llm
   - name: theme
