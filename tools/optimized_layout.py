@@ -530,6 +530,56 @@ class OptimizedFlowchartGenerator:
         
         return nodes, connections
     
+    
+    def _extract_mermaid_label_enhanced(self, shape: str) -> str:
+        """
+        增强的Mermaid标签提取方法，更好地处理复杂标签
+        
+        Args:
+            shape: 节点形状字符串
+            
+        Returns:
+            提取的标签文本
+        """
+        if not shape:
+            return ""
+        
+        # 移除引号
+        shape = shape.strip()
+        if (shape.startswith('"') and shape.endswith('"')) or            (shape.startswith("'") and shape.endswith("'")):
+            shape = shape[1:-1]
+        
+        # 处理HTML实体
+        html_entities = {
+            '&lt;': '<',
+            '&gt;': '>',
+            '&amp;': '&',
+            '&quot;': '"',
+            '&apos;': "'"
+        }
+        
+        for entity, char in html_entities.items():
+            shape = shape.replace(entity, char)
+        
+        # 处理Unicode转义序列
+        shape = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), shape)
+        shape = re.sub(r'\\U([0-9a-fA-F]{8})', lambda m: chr(int(m.group(1), 16)), shape)
+        
+        # 处理转义字符
+        escape_sequences = {
+            '\\n': '\n',
+            '\\t': '\t',
+            '\\r': '\r',
+            '\\': '\\'
+        }
+        
+        for seq, char in escape_sequences.items():
+            shape = shape.replace(seq, char)
+        
+        # 移除形状标记
+        return re.sub(r'^[\[\{\(]|[\]\}\)]$', '', shape)
+
+
     def _parse_mermaid(self, text: str) -> Tuple[List[Dict], List[Dict]]:
         """Parse Mermaid syntax to extract flow nodes and connections"""
         nodes = []
@@ -601,7 +651,7 @@ class OptimizedFlowchartGenerator:
                     
                     # Process from node
                     if from_id not in node_dict:
-                        label = self._extract_mermaid_label(from_label) if from_label else from_id
+                        label = self._extract_mermaid_label_enhanced(from_label) if from_label else from_id
                         node_type = self._determine_mermaid_node_type(from_label) if from_label else 'default'
                         
                         nodes.append({
@@ -613,7 +663,7 @@ class OptimizedFlowchartGenerator:
                     
                     # Process to node
                     if to_id not in node_dict:
-                        label = self._extract_mermaid_label(to_label) if to_label else to_id
+                        label = self._extract_mermaid_label_enhanced(to_label) if to_label else to_id
                         node_type = self._determine_mermaid_node_type(to_label) if to_label else 'default'
                         
                         nodes.append({
@@ -1227,6 +1277,181 @@ class OptimizedFlowchartGenerator:
         plt.close(fig)
         
         return file_path
+    def _calculate_adaptive_positions_enhanced(self, nodes: List[Dict], layout: str, 
+                                            canvas_width: int, canvas_height: int) -> Dict[str, Tuple[float, float]]:
+        """
+        增强的自适应位置计算方法，更好地处理节点重叠和间距问题
+        
+        Args:
+            nodes: 节点列表
+            layout: 布局方向 ("left-right" 或 "top-bottom")
+            canvas_width: 画布宽度
+            canvas_height: 画布高度
+            
+        Returns:
+            节点位置字典
+        """
+        positions = {}
+        node_count = len(nodes)
+        
+        # 分析流程图结构
+        structure_analysis = self._analyze_flowchart_structure(nodes, [])
+        has_branches = structure_analysis['has_branches']
+        
+        # 计算基础间距
+        if layout == "left-right":
+            # 水平布局
+            base_spacing_x = min(canvas_width * 0.8 / max(node_count, 1), 200)
+            base_spacing_y = canvas_height * 0.6 / max(structure_analysis.get('max_branch_depth', 1), 1)
+            
+            # 确保最小间距
+            min_spacing_x = self.node_width * 1.5
+            min_spacing_y = self.node_height * 2.0
+            
+            spacing_x = max(base_spacing_x, min_spacing_x)
+            spacing_y = max(base_spacing_y, min_spacing_y)
+            
+            # 计算起始位置（居中）
+            total_width = spacing_x * (node_count - 1)
+            start_x = (canvas_width - total_width) / 2
+            start_y = canvas_height / 2
+            
+            # 计算节点位置
+            for i, node in enumerate(nodes):
+                node_id = node['id']
+                
+                # 基础位置
+                x = start_x + i * spacing_x
+                y = start_y
+                
+                # 如果有分支，调整垂直位置
+                if has_branches:
+                    # 根据节点在流程中的位置调整垂直位置
+                    level = self._get_node_level(node, nodes)
+                    level_offset = (level - 1) * spacing_y
+                    
+                    # 交替上下排列
+                    if level % 2 == 0:
+                        y = start_y + level_offset / 2
+                    else:
+                        y = start_y - level_offset / 2
+                
+                positions[node_id] = (x, y)
+                
+        else:  # top-bottom
+            # 垂直布局
+            base_spacing_y = min(canvas_height * 0.8 / max(node_count, 1), 150)
+            base_spacing_x = canvas_width * 0.6 / max(structure_analysis.get('max_branch_width', 1), 1)
+            
+            # 确保最小间距
+            min_spacing_y = self.node_height * 1.8
+            min_spacing_x = self.node_width * 2.0
+            
+            spacing_y = max(base_spacing_y, min_spacing_y)
+            spacing_x = max(base_spacing_x, min_spacing_x)
+            
+            # 计算起始位置（居中）
+            total_height = spacing_y * (node_count - 1)
+            start_x = canvas_width / 2
+            start_y = (canvas_height - total_height) / 2
+            
+            # 计算节点位置
+            for i, node in enumerate(nodes):
+                node_id = node['id']
+                
+                # 基础位置
+                x = start_x
+                y = start_y + i * spacing_y
+                
+                # 如果有分支，调整水平位置
+                if has_branches:
+                    # 根据节点在流程中的位置调整水平位置
+                    level = self._get_node_level(node, nodes)
+                    level_offset = (level - 1) * spacing_x
+                    
+                    # 交替左右排列
+                    if level % 2 == 0:
+                        x = start_x + level_offset / 2
+                    else:
+                        x = start_x - level_offset / 2
+                
+                positions[node_id] = (x, y)
+        
+        # 后处理：检查并解决节点重叠
+        positions = self._resolve_node_overlaps(positions, nodes)
+        
+        return positions
+    
+    def _get_node_level(self, node: Dict, nodes: List[Dict]) -> int:
+        """
+        获取节点在流程图中的层级
+        
+        Args:
+            node: 节点数据
+            nodes: 所有节点列表
+            
+        Returns:
+            节点层级
+        """
+        # 简单实现：根据节点在列表中的位置确定层级
+        # 在实际应用中，可以根据节点连接关系计算更准确的层级
+        node_index = nodes.index(node)
+        return (node_index % 3) + 1  # 1-3级循环
+    
+    def _resolve_node_overlaps(self, positions: Dict[str, Tuple[float, float]], 
+                             nodes: List[Dict]) -> Dict[str, Tuple[float, float]]:
+        """
+        解决节点重叠问题
+        
+        Args:
+            positions: 节点位置字典
+            nodes: 节点列表
+            
+        Returns:
+            调整后的节点位置字典
+        """
+        # 创建节点ID到节点数据的映射
+        node_map = {node['id']: node for node in nodes}
+        
+        # 检查所有节点对是否有重叠
+        for i, node_id1 in enumerate(positions):
+            pos1 = positions[node_id1]
+            node1 = node_map[node_id1]
+            
+            for node_id2 in list(positions.keys())[i+1:]:
+                pos2 = positions[node_id2]
+                node2 = node_map[node_id2]
+                
+                # 计算节点之间的距离
+                distance = math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
+                
+                # 计算最小安全距离（基于节点大小）
+                min_safe_distance = (self.node_width + self.node_height) / 2
+                
+                # 如果节点重叠，调整位置
+                if distance < min_safe_distance:
+                    # 计算调整方向
+                    if distance > 0:
+                        dx = (pos2[0] - pos1[0]) / distance
+                        dy = (pos2[1] - pos1[1]) / distance
+                    else:
+                        # 如果节点完全重叠，随机选择方向
+                        import random
+                        angle = random.random() * 2 * math.pi
+                        dx = math.cos(angle)
+                        dy = math.sin(angle)
+                    
+                    # 计算需要移动的距离
+                    move_distance = (min_safe_distance - distance) / 2 + 5  # 额外5像素间距
+                    
+                    # 调整两个节点的位置
+                    positions[node_id1] = (pos1[0] - dx * move_distance, pos1[1] - dy * move_distance)
+                    positions[node_id2] = (pos2[0] + dx * move_distance, pos2[1] + dy * move_distance)
+        
+        return positions
+
+
+
     
     def _calculate_intelligent_positions(self, nodes: List[Dict], layout: str, canvas_width: float, canvas_height: float, rows: int, cols: int) -> Dict[str, Tuple[float, float]]:
         """Calculate intelligent multi-row/column positions to maximize space utilization / 计算智能多行多列位置以最大化空间利用"""

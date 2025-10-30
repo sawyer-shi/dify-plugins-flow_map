@@ -1,30 +1,40 @@
 # -*- coding: utf-8 -*-
 """
-自由流程图布局算法
-Free Flowchart Layout Algorithm
+改进的自由流程图布局算法
+Improved Free Flowchart Layout Algorithm
 
-独立的流程图布局实现，不依赖于其他流程图工具
+专注于防止节点覆盖、遮盖或接触，然后再实现连线
 """
 
 import math
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Set
 
 
-class FlowchartLayout:
+class ImprovedFlowchartLayout:
     """
-    自由流程图布局类
-    实现简单的层次布局算法
+    改进的自定义流程图布局类
+    首先确保节点不会相互覆盖、遮盖或接触，然后再实现连线
     """
     
     def __init__(self):
-        # 默认布局参数 - 增加间距避免重叠
+        # 默认布局参数
         self.node_width = 140
         self.node_height = 60
-        self.horizontal_spacing = 220  # 增加水平间距，避免节点重叠
-        self.vertical_spacing = 100
-        self.margin = 50
-    
-    def layout(self, elements: List[Dict[str, Any]], is_chinese: bool = False) -> Dict[str, Tuple[int, int]]:
+        self.min_horizontal_spacing = 200  # 最小水平间距，确保节点不接触
+        self.min_vertical_spacing = 120    # 最小垂直间距，确保节点不接触
+        self.margin = 50                   # 画布边距
+        
+        # 判断分支（菱形）节点需要更大的空间
+        self.diamond_width = 160           # 菱形节点宽度
+        self.diamond_height = 80           # 菱形节点高度
+        self.diamond_horizontal_spacing = 240  # 菱形节点的水平间距
+        self.diamond_vertical_spacing = 160    # 菱形节点的垂直间距
+        
+        # 节点位置记录
+        self.node_positions = {}
+        self.node_rectangles = {}  # 记录每个节点的矩形区域 {node_id: (left, top, right, bottom)}
+        
+    def layout(self, elements: List[Dict[str, Any]], is_chinese: bool = False) -> Dict[str, Any]:
         """
         计算流程图布局
         
@@ -33,14 +43,14 @@ class FlowchartLayout:
             is_chinese: 是否为中文布局（从右到左）
             
         Returns:
-            节点位置字典
+            包含节点位置和画布大小的字典
         """
         # 提取节点和边
         nodes = [e for e in elements if e["type"] == "node"]
         edges = [e for e in elements if e["type"] == "edge"]
         
         if not nodes:
-            return {}
+            return {"positions": {}, "canvas_width": 800, "canvas_height": 600}
         
         # 构建节点ID到节点的映射
         node_map = {node["id"]: node for node in nodes}
@@ -60,10 +70,18 @@ class FlowchartLayout:
         # 拓扑排序，确定节点的层级
         levels = self._topological_sort_levels(nodes, in_degree, adjacency)
         
-        # 计算节点位置
-        positions = self._calculate_positions(levels, is_chinese)
+        # 重置节点位置记录
+        self.node_positions = {}
+        self.node_rectangles = {}
         
-        return positions
+        # 计算节点位置，确保节点不重叠
+        positions, canvas_width, canvas_height = self._calculate_non_overlapping_positions(levels, is_chinese, adjacency, node_map)
+        
+        return {
+            "positions": positions,
+            "canvas_width": canvas_width,
+            "canvas_height": canvas_height
+        }
     
     def _topological_sort_levels(self, nodes: List[Dict[str, Any]], 
                                 in_degree: Dict[str, int], 
@@ -101,11 +119,10 @@ class FlowchartLayout:
                     if in_degree[neighbor_id] == 0 and neighbor_id not in visited:
                         queue.append(neighbor_id)
         
-        # 处理可能存在的环（将剩余节点添加到不同层级，避免重叠）
+        # 处理可能存在的环（将剩余节点添加到不同层级）
         remaining_nodes = [node["id"] for node in nodes if node["id"] not in visited]
         if remaining_nodes:
             # 对于环中的节点，尝试根据它们在图中的位置分配到不同层级
-            # 简单策略：根据连接关系，将环中节点分散到不同层级
             for node_id in remaining_nodes:
                 # 找到该节点连接的已访问节点
                 connected_visited = [n for n in adjacency[node_id] if n in visited]
@@ -134,102 +151,287 @@ class FlowchartLayout:
         
         return levels
     
-    def _calculate_positions(self, levels: List[List[str]], is_chinese: bool = False) -> Dict[str, Tuple[int, int]]:
+    def _calculate_non_overlapping_positions(self, levels: List[List[str]], 
+                                           is_chinese: bool, 
+                                           adjacency: Dict[str, List[str]],
+                                           node_map: Dict[str, Dict[str, Any]]) -> Tuple[Dict[str, Tuple[int, int]], int, int]:
         """
-        计算节点的位置
+        计算节点的位置，确保节点不重叠
         
         Args:
             levels: 节点层级列表
             is_chinese: 是否为中文布局（从右到左）
+            adjacency: 邻接表
+            node_map: 节点ID到节点信息的映射
             
         Returns:
-            节点位置字典
+            元组，包含节点位置字典、画布宽度和画布高度
         """
         positions = {}
         
-        # 计算每层的最大宽度
+        # 计算画布的初始大小
         max_level_width = max(len(level) for level in levels) if levels else 0
         
-        # 计算画布宽度和高度
-        canvas_width = max_level_width * self.horizontal_spacing + 2 * self.margin
-        canvas_height = len(levels) * self.vertical_spacing + 2 * self.margin
+        # 初始画布大小计算
+        initial_canvas_width = max_level_width * self.min_horizontal_spacing + 2 * self.margin
+        initial_canvas_height = len(levels) * self.min_vertical_spacing + 2 * self.margin
         
-        # 为每个节点计算位置
+        # 设置最小画布尺寸，确保不会太小
+        min_canvas_width = 800
+        min_canvas_height = 600
+        
+        canvas_width = max(initial_canvas_width, min_canvas_width)
+        canvas_height = max(initial_canvas_height, min_canvas_height)
+        
+        # 为每个层级计算节点位置
         for level_idx, level in enumerate(levels):
-            level_y = self.margin + level_idx * self.vertical_spacing
+            level_y = self.margin + level_idx * self.min_vertical_spacing
             
             # 计算该层节点的起始x坐标，使节点居中
-            level_width = len(level) * self.horizontal_spacing
-            start_x = (canvas_width - level_width) / 2 + self.horizontal_spacing / 2
+            level_width = len(level) * self.min_horizontal_spacing
+            start_x = (canvas_width - level_width) / 2 + self.min_horizontal_spacing / 2
             
-            # 检查与前面层级的节点是否重叠，如果重叠则调整
+            # 为该层每个节点计算位置
             for node_idx, node_id in enumerate(level):
-                if is_chinese:
-                    # 中文布局：从右到左
-                    node_x = canvas_width - start_x - node_idx * self.horizontal_spacing
+                # 获取节点信息，判断是否为菱形节点
+                node = node_map.get(node_id, {})
+                node_shape = node.get("shape", "rectangle")
+                
+                # 根据节点形状调整间距
+                if node_shape == "diamond":
+                    # 菱形节点需要更大的空间
+                    if is_chinese:
+                        # 中文布局：从右到左
+                        node_x = canvas_width - start_x - node_idx * self.diamond_horizontal_spacing
+                    else:
+                        # 英文布局：从左到右
+                        node_x = start_x + node_idx * self.diamond_horizontal_spacing
                 else:
-                    # 英文布局：从左到右
-                    node_x = start_x + node_idx * self.horizontal_spacing
+                    # 普通节点
+                    if is_chinese:
+                        # 中文布局：从右到左
+                        node_x = canvas_width - start_x - node_idx * self.min_horizontal_spacing
+                    else:
+                        # 英文布局：从左到右
+                        node_x = start_x + node_idx * self.min_horizontal_spacing
                 
-                # 检查与前面层级的节点是否重叠
-                overlap = True
-                attempts = 0
+                # 先记录节点的矩形区域，以便后续节点可以检查重叠
+                self._record_node_rectangle(node_id, node_x, level_y, node_shape)
                 
-                while overlap and attempts < 10:  # 最多尝试10次调整
-                    overlap = False
-                    # 检查与前面层级的节点是否重叠
-                    for prev_level_idx in range(level_idx):
-                        for prev_node_id in levels[prev_level_idx]:
-                            if prev_node_id in positions:
-                                prev_x, prev_y = positions[prev_node_id]
-                                # 检查是否与前面层级的节点重叠
-                                # 考虑节点大小，检查矩形区域是否重叠
-                                node_left = node_x - self.node_width / 2
-                                node_right = node_x + self.node_width / 2
-                                node_top = level_y - self.node_height / 2
-                                node_bottom = level_y + self.node_height / 2
-                                
-                                prev_left = prev_x - self.node_width / 2
-                                prev_right = prev_x + self.node_width / 2
-                                prev_top = prev_y - self.node_height / 2
-                                prev_bottom = prev_y + self.node_height / 2
-                                
-                                # 检查矩形区域是否重叠
-                                # 两个矩形重叠的条件是：一个矩形的左边小于另一个矩形的右边，且右边大于另一个矩形的左边
-                                # 对于垂直方向，我们放宽条件，只要两个节点在同一列（水平重叠）就认为重叠
-                                horizontal_overlap = (node_left < prev_right and node_right > prev_left)
-                                # 垂直方向放宽条件，只要节点在同一列（水平重叠）就认为可能重叠
-                                vertical_overlap = (node_top < prev_bottom and node_bottom > prev_top) or (abs(node_x - prev_x) < 10)  # x坐标相近也认为可能重叠
-                                
-                                if horizontal_overlap and vertical_overlap:
-                                    overlap = True
-                                    # 调整x坐标，向右移动
-                                    node_x += self.horizontal_spacing / 2
-                                    break
-                        if overlap:
-                            break
-                    attempts += 1
+                # 检查并调整位置，确保不与已有节点重叠
+                adjusted_x, adjusted_y = self._find_non_overlapping_position(
+                    node_id, node_x, level_y, is_chinese, canvas_width, node_shape
+                )
                 
-                positions[node_id] = (int(node_x), int(level_y))
+                positions[node_id] = (int(adjusted_x), int(adjusted_y))
+                
+                # 更新节点的矩形区域为最终位置
+                self._record_node_rectangle(node_id, adjusted_x, adjusted_y, node_shape)
         
-        return positions
+        # 检查并调整画布大小，确保所有节点都在画布内
+        canvas_width, canvas_height = self._adjust_canvas_size(positions, canvas_width, canvas_height)
+        
+        return positions, canvas_width, canvas_height
+    
+    def _adjust_canvas_size(self, positions: Dict[str, Tuple[int, int]], 
+                          current_width: int, current_height: int) -> Tuple[int, int]:
+        """
+        根据节点位置调整画布大小，确保所有节点都在画布内
+        
+        Args:
+            positions: 节点位置字典
+            current_width: 当前画布宽度
+            current_height: 当前画布高度
+            
+        Returns:
+            调整后的画布宽度和高度
+        """
+        if not positions:
+            return current_width, current_height
+        
+        # 找出所有节点的边界
+        min_x = min(pos[0] for pos in positions.values())
+        max_x = max(pos[0] for pos in positions.values())
+        min_y = min(pos[1] for pos in positions.values())
+        max_y = max(pos[1] for pos in positions.values())
+        
+        # 计算需要的画布大小，考虑节点尺寸和边距
+        needed_width = max_x + self.node_width // 2 + self.margin
+        needed_height = max_y + self.node_height // 2 + self.margin
+        
+        # 如果有负坐标，需要调整
+        if min_x < self.margin:
+            needed_width += self.margin - min_x
+        if min_y < self.margin:
+            needed_height += self.margin - min_y
+        
+        # 确保画布不小于最小尺寸
+        min_canvas_width = 800
+        min_canvas_height = 600
+        
+        adjusted_width = max(current_width, needed_width, min_canvas_width)
+        adjusted_height = max(current_height, needed_height, min_canvas_height)
+        
+        return adjusted_width, adjusted_height
+    
+    def _find_non_overlapping_position(self, node_id: str, initial_x: float, initial_y: float, 
+                                     is_chinese: bool, canvas_width: float, node_shape: str = "rectangle") -> Tuple[float, float]:
+        """
+        找到一个不与已有节点重叠的位置
+        
+        Args:
+            node_id: 当前节点ID
+            initial_x: 初始x坐标
+            initial_y: 初始y坐标
+            is_chinese: 是否为中文布局
+            canvas_width: 画布宽度
+            node_shape: 节点形状
+            
+        Returns:
+            调整后的坐标 (x, y)
+        """
+        # 初始位置
+        x, y = initial_x, initial_y
+        
+        # 根据节点形状设置间距
+        if node_shape == "diamond":
+            horizontal_spacing = self.diamond_horizontal_spacing
+            vertical_spacing = self.diamond_vertical_spacing
+        else:
+            horizontal_spacing = self.min_horizontal_spacing
+            vertical_spacing = self.min_vertical_spacing
+        
+        # 检查是否与已有节点重叠
+        max_attempts = 50  # 最大尝试次数
+        attempt = 0
+        
+        while attempt < max_attempts:
+            # 计算当前节点的矩形区域
+            node_rect = self._calculate_node_rectangle(x, y, node_shape)
+            
+            # 检查是否与已有节点重叠
+            overlap = False
+            for existing_id, existing_rect in self.node_rectangles.items():
+                if existing_id == node_id:
+                    continue
+                    
+                if self._rectangles_overlap(node_rect, existing_rect):
+                    overlap = True
+                    break
+            
+            if not overlap:
+                # 没有重叠，返回当前位置
+                return x, y
+            
+            # 有重叠，调整位置
+            # 尝试多种调整策略
+            if attempt % 4 == 0:
+                # 向右/左移动
+                if is_chinese:
+                    x -= horizontal_spacing / 2
+                else:
+                    x += horizontal_spacing / 2
+            elif attempt % 4 == 1:
+                # 向下移动
+                y += vertical_spacing / 2
+            elif attempt % 4 == 2:
+                # 向左/右移动
+                if is_chinese:
+                    x += horizontal_spacing / 2
+                else:
+                    x -= horizontal_spacing / 2
+            else:
+                # 向上移动
+                y -= vertical_spacing / 2
+            
+            # 确保不超出画布边界
+            x = max(self.margin, min(x, canvas_width - self.margin))
+            y = max(self.margin, y)
+            
+            attempt += 1
+        
+        # 如果尝试了多次仍然重叠，返回最后的位置
+        return x, y
+    
+    def _calculate_node_rectangle(self, x: float, y: float, node_shape: str = "rectangle") -> Tuple[float, float, float, float]:
+        """
+        计算节点的矩形区域
+        
+        Args:
+            x: 节点中心x坐标
+            y: 节点中心y坐标
+            node_shape: 节点形状
+            
+        Returns:
+            矩形区域 (left, top, right, bottom)
+        """
+        # 根据节点形状设置尺寸
+        if node_shape == "diamond":
+            width = self.diamond_width
+            height = self.diamond_height
+        else:
+            width = self.node_width
+            height = self.node_height
+            
+        left = x - width / 2
+        right = x + width / 2
+        top = y - height / 2
+        bottom = y + height / 2
+        
+        return (left, top, right, bottom)
+    
+    def _record_node_rectangle(self, node_id: str, x: float, y: float, node_shape: str = "rectangle"):
+        """
+        记录节点的矩形区域
+        
+        Args:
+            node_id: 节点ID
+            x: 节点中心x坐标
+            y: 节点中心y坐标
+            node_shape: 节点形状
+        """
+        self.node_rectangles[node_id] = self._calculate_node_rectangle(x, y, node_shape)
+    
+    def _rectangles_overlap(self, rect1: Tuple[float, float, float, float], 
+                          rect2: Tuple[float, float, float, float]) -> bool:
+        """
+        检查两个矩形是否重叠
+        
+        Args:
+            rect1: 矩形1 (left, top, right, bottom)
+            rect2: 矩形2 (left, top, right, bottom)
+            
+        Returns:
+            是否重叠
+        """
+        left1, top1, right1, bottom1 = rect1
+        left2, top2, right2, bottom2 = rect2
+        
+        # 检查是否有重叠
+        # 添加一个小边距，确保节点之间有一定的间距
+        margin = 10  # 额外的边距
+        
+        return not (right1 + margin < left2 or 
+                   right2 + margin < left1 or 
+                   bottom1 + margin < top2 or 
+                   bottom2 + margin < top1)
     
     def set_layout_params(self, node_width: int = None, node_height: int = None, 
-                         horizontal_spacing: int = None, vertical_spacing: int = None):
+                         min_horizontal_spacing: int = None, min_vertical_spacing: int = None):
         """
         设置布局参数
         
         Args:
             node_width: 节点宽度
             node_height: 节点高度
-            horizontal_spacing: 水平间距
-            vertical_spacing: 垂直间距
+            min_horizontal_spacing: 最小水平间距
+            min_vertical_spacing: 最小垂直间距
         """
         if node_width is not None:
             self.node_width = node_width
         if node_height is not None:
             self.node_height = node_height
-        if horizontal_spacing is not None:
-            self.horizontal_spacing = horizontal_spacing
-        if vertical_spacing is not None:
-            self.vertical_spacing = vertical_spacing
+        if min_horizontal_spacing is not None:
+            self.min_horizontal_spacing = min_horizontal_spacing
+        if min_vertical_spacing is not None:
+            self.min_vertical_spacing = min_vertical_spacing

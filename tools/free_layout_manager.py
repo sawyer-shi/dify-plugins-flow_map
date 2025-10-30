@@ -7,7 +7,9 @@ Layout Manager
 """
 
 from typing import Dict, Any, List, Tuple
-from .free_flowchart_layout import FlowchartLayout
+from PIL import Image
+from .free_flowchart_layout import ImprovedFlowchartLayout
+from .free_layout_renderer import ImprovedFlowchartRenderer
 
 
 class LayoutManager:
@@ -18,9 +20,10 @@ class LayoutManager:
     
     def __init__(self):
         # 初始化流程图布局算法
-        self.flowchart_layout = FlowchartLayout()
+        self.flowchart_layout = ImprovedFlowchartLayout()
+        self.flowchart_renderer = ImprovedFlowchartRenderer()
     
-    def layout(self, elements: List[Dict[str, Any]], chart_type: str, is_chinese: bool = False) -> Dict[str, Tuple[int, int]]:
+    def layout(self, elements: List[Dict[str, Any]], chart_type: str, is_chinese: bool = False) -> Dict[str, Any]:
         """
         使用流程图布局算法
         
@@ -30,9 +33,8 @@ class LayoutManager:
             is_chinese: 是否为中文布局（从右到左）
             
         Returns:
-            节点位置字典
+            包含节点位置和画布大小的字典
         """
-        # 只支持流程图布局
         return self.flowchart_layout.layout(elements, is_chinese)
     
     def get_layout_instance(self, chart_type: str):
@@ -45,9 +47,9 @@ class LayoutManager:
         Returns:
             流程图布局实例
         """
-        # 只返回流程图布局实例
         return self.flowchart_layout
     
+
     def set_flowchart_params(self, node_width: int = None, node_height: int = None, 
                             horizontal_spacing: int = None, vertical_spacing: int = None):
         """
@@ -62,3 +64,16 @@ class LayoutManager:
         self.flowchart_layout.set_layout_params(
             node_width, node_height, horizontal_spacing, vertical_spacing
         )
+    
+    def render(self, mermaid_code: str, layout_result: Dict[str, Any]) -> Image.Image:
+        """
+        渲染流程图
+        
+        Args:
+            mermaid_code: Mermaid代码
+            layout_result: 布局结果
+            
+        Returns:
+            渲染后的图像
+        """
+        return self.flowchart_renderer.render_mermaid(mermaid_code, layout_result)
