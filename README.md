@@ -114,13 +114,7 @@ The plugin automatically detects branching scenarios in your flowchart and switc
 
 ### Colorful Arrow Labels
 
-Supports labeled arrows with intelligent color mapping:
-
-```mermaid
-F -->|Approved| G    # Green arrow for positive outcomes
-F -->|Rejected| H    # Red arrow for negative outcomes
-F -->|Pending| I     # Orange arrow for pending states
-```
+Supports labeled arrows with intelligent color mapping
 
 ### Theme Customization
 
