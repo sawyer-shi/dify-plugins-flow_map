@@ -899,10 +899,18 @@ class OptimizedFlowchartGenerator:
         
         return base_width, base_height
     
-    def _calculate_dynamic_spacing(self, node_count: int, layout: str) -> Tuple[float, float]:
+    def _calculate_dynamic_spacing(self, node_count: int, layout: str, max_branches: int = 0) -> Tuple[float, float]:
         """
-        根据节点数量和布局类型动态计算间距
-        Calculate dynamic spacing based on node count and layout type
+        根据节点数量、布局类型和分支数量动态计算间距
+        Calculate dynamic spacing based on node count, layout type, and branch count
+        
+        Args:
+            node_count: 节点总数
+            layout: 布局类型 ("left-right" 或 "top-bottom")
+            max_branches: 最大分支数，用于调整间距
+            
+        Returns:
+            元组，包含水平间距和垂直间距
         """
         base_h_spacing = self.horizontal_spacing
         base_v_spacing = self.vertical_spacing
@@ -921,12 +929,52 @@ class OptimizedFlowchartGenerator:
             # 大量节点：最紧凑布局
             spacing_factor = 0.65
         
+        # 根据分支数量调整间距 - 大幅增强多分支场景处理
+        if max_branches > 0:
+            # 基础分支调整
+            if max_branches <= 2:
+                branch_factor_h = 1.1
+                branch_factor_v = 1.1
+            elif max_branches <= 3:
+                branch_factor_h = 1.25
+                branch_factor_v = 1.25
+            elif max_branches <= 5:
+                # 4-5个分支：显著增加间距
+                branch_factor_h = 1.6
+                branch_factor_v = 1.6
+            elif max_branches <= 8:
+                # 6-8个分支：大幅增加间距
+                branch_factor_h = 2.2
+                branch_factor_v = 2.2
+            else:
+                # 9个以上分支：超大间距调整
+                branch_factor_h = 2.8
+                branch_factor_v = 2.8
+            
+            # 根据布局类型应用不同的分支因子
+            if layout == "left-right":
+                # 水平布局：垂直方向需要更多空间容纳分支
+                spacing_factor *= branch_factor_v * 1.3  # 垂直方向额外增加30%
+                spacing_factor *= branch_factor_h
+            else:  # top-bottom
+                # 垂直布局：水平方向需要更多空间容纳分支
+                spacing_factor *= branch_factor_h * 1.3  # 水平方向额外增加30%
+                spacing_factor *= branch_factor_v
+        
+        # 节点数量调整 - 密集场景额外增强
+        if node_count > 15:
+            # 超多节点场景
+            spacing_factor *= 1.4
+        elif node_count > 10:
+            # 多节点场景
+            spacing_factor *= 1.2
+        
         dynamic_h_spacing = base_h_spacing * spacing_factor
         dynamic_v_spacing = base_v_spacing * spacing_factor
         
-        # 更紧凑的最小间距，防止重叠但节省空间
-        min_h_spacing = self.node_width + 0.5  # 减小空白间距
-        min_v_spacing = self.node_height + 0.4  # 减小空白间距
+        # 增强最小间距，防止多分支场景下的重叠
+        min_h_spacing = self.node_width * 1.8  # 增加最小水平间距
+        min_v_spacing = self.node_height * 1.8  # 增加最小垂直间距
         
         dynamic_h_spacing = max(dynamic_h_spacing, min_h_spacing)
         dynamic_v_spacing = max(dynamic_v_spacing, min_v_spacing)
@@ -1072,20 +1120,40 @@ class OptimizedFlowchartGenerator:
         node_count = len(nodes)
         text_analysis = self._analyze_text_characteristics(nodes)
         
+        # 分析流程图结构，特别关注分支情况
+        connections = getattr(self, '_temp_connections', [])
+        structure_analysis = self._analyze_flowchart_structure(nodes, connections)
+        
         # Get adaptive spacing / 获取自适应间距
         base_h_spacing = self.horizontal_spacing
         base_v_spacing = self.vertical_spacing
         
+        # 增强分支感知的间距调整
+        if structure_analysis['has_branches']:
+            max_branches = structure_analysis.get('max_branches', 0)
+            if max_branches <= 2:
+                branch_factor = 1.2  # 2个分支增加20%
+            elif max_branches <= 3:
+                branch_factor = 1.5  # 3个分支增加50%
+            elif max_branches <= 5:
+                branch_factor = 2.0  # 4-5个分支增加100%
+            elif max_branches <= 8:
+                branch_factor = 2.8  # 6-8个分支增加180%
+            else:
+                branch_factor = 3.5  # 9个以上分支增加250%
+        else:
+            branch_factor = 1.0
+        
         # Adjust spacing based on content / 根据内容调整间距
         if text_analysis["text_complexity"] == "complex":
-            h_spacing_factor = 1.2
-            v_spacing_factor = 1.3
+            h_spacing_factor = 1.2 * branch_factor
+            v_spacing_factor = 1.3 * branch_factor
         elif text_analysis["text_complexity"] == "simple":
-            h_spacing_factor = 0.9
-            v_spacing_factor = 0.9
+            h_spacing_factor = 0.9 * branch_factor
+            v_spacing_factor = 0.9 * branch_factor
         else:
-            h_spacing_factor = 1.0
-            v_spacing_factor = 1.0
+            h_spacing_factor = 1.0 * branch_factor
+            v_spacing_factor = 1.0 * branch_factor
         
         if text_analysis["has_long_text"]:
             h_spacing_factor *= 1.15
@@ -1115,9 +1183,9 @@ class OptimizedFlowchartGenerator:
             else:
                 y_spacing = available_height
             
-            # 确保最小间距，防止节点重叠
-            min_x_spacing = self.node_width + 0.8  # 最小水平间距
-            min_y_spacing = self.node_height + 0.8  # 最小垂直间距
+            # 增强最小间距，防止节点重叠，特别是多分支场景
+            min_x_spacing = self.node_width * 1.8  # 增加最小水平间距
+            min_y_spacing = self.node_height * 1.8  # 增加最小垂直间距
             x_spacing = max(x_spacing, min_x_spacing)
             y_spacing = max(y_spacing, min_y_spacing)
             
@@ -1162,9 +1230,9 @@ class OptimizedFlowchartGenerator:
             else:
                 y_spacing = available_height
             
-            # 确保最小间距，防止节点重叠
-            min_x_spacing = self.node_width + 0.8  # 最小水平间距
-            min_y_spacing = self.node_height + 0.8  # 最小垂直间距
+            # 增强最小间距，防止节点重叠，特别是多分支场景
+            min_x_spacing = self.node_width * 1.8  # 增加最小水平间距
+            min_y_spacing = self.node_height * 1.8  # 增加最小垂直间距
             x_spacing = max(x_spacing, min_x_spacing)
             y_spacing = max(y_spacing, min_y_spacing)
             
@@ -1184,6 +1252,9 @@ class OptimizedFlowchartGenerator:
                        min(canvas_height - self.margin_y - self.node_height/2, y))
                 
                 positions[node['id']] = (x, y)
+        
+        # 后处理：解决节点重叠问题，特别是多分支场景
+        positions = self._resolve_node_overlaps(positions, nodes, structure_analysis)
         
         return positions
     
@@ -1378,7 +1449,7 @@ class OptimizedFlowchartGenerator:
                 positions[node_id] = (x, y)
         
         # 后处理：检查并解决节点重叠
-        positions = self._resolve_node_overlaps(positions, nodes)
+        positions = self._resolve_node_overlaps(positions, nodes, structure_analysis)
         
         return positions
     
@@ -1399,54 +1470,109 @@ class OptimizedFlowchartGenerator:
         return (node_index % 3) + 1  # 1-3级循环
     
     def _resolve_node_overlaps(self, positions: Dict[str, Tuple[float, float]], 
-                             nodes: List[Dict]) -> Dict[str, Tuple[float, float]]:
+                             nodes: List[Dict], structure_analysis: Dict = None) -> Dict[str, Tuple[float, float]]:
         """
-        解决节点重叠问题
+        增强的节点重叠解决方法，特别针对多分支场景优化
         
         Args:
             positions: 节点位置字典
             nodes: 节点列表
+            structure_analysis: 流程图结构分析结果
             
         Returns:
             调整后的节点位置字典
         """
+        if structure_analysis is None:
+            structure_analysis = self._analyze_flowchart_structure(nodes, [])
+            
         # 创建节点ID到节点数据的映射
         node_map = {node['id']: node for node in nodes}
         
-        # 检查所有节点对是否有重叠
-        for i, node_id1 in enumerate(positions):
-            pos1 = positions[node_id1]
-            node1 = node_map[node_id1]
+        # 增强的最小安全距离计算，考虑分支复杂度
+        max_branches = structure_analysis.get('max_branches', 0)
+        if max_branches <= 2:
+            safety_factor = 1.2
+        elif max_branches <= 3:
+            safety_factor = 1.5
+        elif max_branches <= 5:
+            safety_factor = 2.0
+        elif max_branches <= 8:
+            safety_factor = 2.8
+        else:
+            safety_factor = 3.5
             
-            for node_id2 in list(positions.keys())[i+1:]:
-                pos2 = positions[node_id2]
-                node2 = node_map[node_id2]
+        # 基础最小安全距离
+        base_safe_distance = (self.node_width + self.node_height) / 2
+        min_safe_distance = base_safe_distance * safety_factor
+        
+        # 多次迭代解决重叠，确保收敛
+        max_iterations = 5  # 增加迭代次数，确保复杂场景下的收敛
+        for iteration in range(max_iterations):
+            overlap_found = False
+            
+            # 检查所有节点对是否有重叠
+            for i, node_id1 in enumerate(positions):
+                pos1 = positions[node_id1]
+                node1 = node_map[node_id1]
                 
-                # 计算节点之间的距离
-                distance = math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
-                
-                # 计算最小安全距离（基于节点大小）
-                min_safe_distance = (self.node_width + self.node_height) / 2
-                
-                # 如果节点重叠，调整位置
-                if distance < min_safe_distance:
-                    # 计算调整方向
-                    if distance > 0:
-                        dx = (pos2[0] - pos1[0]) / distance
-                        dy = (pos2[1] - pos1[1]) / distance
-                    else:
-                        # 如果节点完全重叠，随机选择方向
-                        import random
-                        angle = random.random() * 2 * math.pi
-                        dx = math.cos(angle)
-                        dy = math.sin(angle)
+                for node_id2 in list(positions.keys())[i+1:]:
+                    pos2 = positions[node_id2]
+                    node2 = node_map[node_id2]
                     
-                    # 计算需要移动的距离
-                    move_distance = (min_safe_distance - distance) / 2 + 5  # 额外5像素间距
+                    # 计算节点之间的距离
+                    distance = math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
                     
-                    # 调整两个节点的位置
-                    positions[node_id1] = (pos1[0] - dx * move_distance, pos1[1] - dy * move_distance)
-                    positions[node_id2] = (pos2[0] + dx * move_distance, pos2[1] + dy * move_distance)
+                    # 如果节点重叠，调整位置
+                    if distance < min_safe_distance:
+                        overlap_found = True
+                        
+                        # 计算调整方向
+                        if distance > 0:
+                            dx = (pos2[0] - pos1[0]) / distance
+                            dy = (pos2[1] - pos1[1]) / distance
+                        else:
+                            # 如果节点完全重叠，随机选择方向
+                            import random
+                            angle = random.random() * 2 * math.pi
+                            dx = math.cos(angle)
+                            dy = math.sin(angle)
+                        
+                        # 计算需要移动的距离，增加额外间距确保分离
+                        move_distance = (min_safe_distance - distance) / 2 + 8  # 增加额外间距
+                        
+                        # 对于分支节点，使用更智能的调整策略
+                        is_branch1 = node_id1 in structure_analysis['branch_nodes']
+                        is_branch2 = node_id2 in structure_analysis['branch_nodes']
+                        is_merge1 = node_id1 in structure_analysis['merge_nodes']
+                        is_merge2 = node_id2 in structure_analysis['merge_nodes']
+                        
+                        if is_branch1 or is_branch2:
+                            # 分支节点优先水平移动
+                            dx *= 1.5
+                            dy *= 0.5
+                        elif is_merge1 or is_merge2:
+                            # 合并节点优先垂直移动
+                            dx *= 0.5
+                            dy *= 1.5
+                        
+                        # 调整两个节点的位置
+                        positions[node_id1] = (pos1[0] - dx * move_distance, pos1[1] - dy * move_distance)
+                        positions[node_id2] = (pos2[0] + dx * move_distance, pos2[1] + dy * move_distance)
+            
+            # 如果没有重叠，提前退出
+            if not overlap_found:
+                break
+        
+        # 最终边界检查，确保所有节点在画布内
+        canvas_width = max(pos[0] for pos in positions.values()) + self.node_width
+        canvas_height = max(pos[1] for pos in positions.values()) + self.node_height
+        
+        for node_id, pos in positions.items():
+            x, y = pos
+            # 确保节点不会超出画布边界
+            x = max(self.node_width/2, min(canvas_width - self.node_width/2, x))
+            y = max(self.node_height/2, min(canvas_height - self.node_height/2, y))
+            positions[node_id] = (x, y)
         
         return positions
 
@@ -1538,62 +1664,21 @@ class OptimizedFlowchartGenerator:
         
         return positions
     
-    def _calculate_branch_aware_positions(self, nodes: List[Dict], connections: List[Dict], layout: str, canvas_width: float, canvas_height: float, rows: int, cols: int) -> Dict[str, Tuple[float, float]]:
-        """Calculate branch-aware node positions to prevent overlap in branching scenarios / 计算分支感知的节点位置以防止分支场景中的重叠"""
+    def _calculate_adaptive_positions_with_spacing(self, nodes: List[Dict], layout: str, canvas_width: float, canvas_height: float, rows: int, cols: int, h_spacing: float, v_spacing: float, structure_analysis: Dict) -> Dict[str, Tuple[float, float]]:
+        """Calculate node positions using dynamic spacing / 使用动态间距计算节点位置"""
         positions = {}
-        node_count = len(nodes)
         text_analysis = self._analyze_text_characteristics(nodes)
-        structure_analysis = self._analyze_flowchart_structure(nodes, connections)
-        
-        # Get adaptive spacing / 获取自适应间距
-        base_h_spacing = self.horizontal_spacing
-        base_v_spacing = self.vertical_spacing
-        
-        # Adjust spacing based on content / 根据内容调整间距
-        if text_analysis["text_complexity"] == "complex":
-            h_spacing_factor = 1.2
-            v_spacing_factor = 1.3
-        elif text_analysis["text_complexity"] == "simple":
-            h_spacing_factor = 0.9
-            v_spacing_factor = 0.9
-        else:
-            h_spacing_factor = 1.0
-            v_spacing_factor = 1.0
-        
-        if text_analysis["has_long_text"]:
-            h_spacing_factor *= 1.15
-            v_spacing_factor *= 1.1
-        
-        # Apply additional spacing for branching scenarios / 为分支场景应用额外间距
-        if structure_analysis['has_branches']:
-            branch_spacing_factor = 1.5 if structure_analysis['has_complex_branches'] else 1.3
-            h_spacing_factor *= branch_spacing_factor
-            v_spacing_factor *= branch_spacing_factor
         
         if layout == "left-right":
             # Branch-aware multi-row horizontal layout / 分支感知多行水平布局
-            available_width = canvas_width - 2 * self.margin_x
-            available_height = canvas_height - 2 * self.margin_y
-            
-            # Calculate adaptive spacing / 计算自适应间距
-            if cols > 1:
-                x_spacing = (available_width / cols) * h_spacing_factor
-            else:
-                x_spacing = available_width
-                
-            if rows > 1:
-                y_spacing = (available_height / rows) * v_spacing_factor
-            else:
-                y_spacing = available_height
-            
             # Position nodes with branch-aware adjustments / 分支感知的节点定位
             for i, node in enumerate(nodes):
                 row = i // cols
                 col = i % cols
                 
                 # Basic position / 基础位置
-                x = self.margin_x + x_spacing * (col + 0.5)
-                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                x = self.margin_x + h_spacing * (col + 0.5)
+                y = canvas_height - self.margin_y - v_spacing * (row + 0.5)
                 
                 # 边界安全检查：确保节点不会超出画布边界
                 x = max(self.margin_x + self.node_width/2, 
@@ -1605,44 +1690,30 @@ class OptimizedFlowchartGenerator:
                 node_id = node['id']
                 if node_id in structure_analysis['branch_nodes']:
                     # Give branch nodes extra horizontal space / 为分支节点提供额外水平空间
-                    x += x_spacing * 0.1
+                    x += h_spacing * 0.1
                 elif node_id in structure_analysis['merge_nodes']:
                     # Give merge nodes extra space too / 为合并节点也提供额外空间
-                    x -= x_spacing * 0.1
+                    x -= h_spacing * 0.1
                 
                 # Fine-tune position based on text length / 根据文本长度微调位置
                 text_length = len(node.get('label', ''))
                 if text_length > text_analysis["avg_text_length"] * 1.5:
                     # Give more space to long text nodes / 为长文本节点提供更多空间
                     if col < cols - 1:  # Not the last column
-                        x += x_spacing * 0.1
+                        x += h_spacing * 0.1
                 
                 positions[node['id']] = (x, y)
         
         else:  # top-bottom
             # Branch-aware multi-column vertical layout / 分支感知多列垂直布局
-            available_width = canvas_width - 2 * self.margin_x
-            available_height = canvas_height - 2 * self.margin_y
-            
-            # Calculate adaptive spacing / 计算自适应间距
-            if cols > 1:
-                x_spacing = (available_width / cols) * h_spacing_factor
-            else:
-                x_spacing = available_width
-                
-            if rows > 1:
-                y_spacing = (available_height / rows) * v_spacing_factor
-            else:
-                y_spacing = available_height
-            
             # Position nodes with branch-aware adjustments / 分支感知的节点定位
             for i, node in enumerate(nodes):
                 col = i // rows
                 row = i % rows
                 
                 # Basic position / 基础位置
-                x = self.margin_x + x_spacing * (col + 0.5)
-                y = canvas_height - self.margin_y - y_spacing * (row + 0.5)
+                x = self.margin_x + h_spacing * (col + 0.5)
+                y = canvas_height - self.margin_y - v_spacing * (row + 0.5)
                 
                 # 边界安全检查：确保节点不会超出画布边界
                 x = max(self.margin_x + self.node_width/2, 
@@ -1654,17 +1725,17 @@ class OptimizedFlowchartGenerator:
                 node_id = node['id']
                 if node_id in structure_analysis['branch_nodes']:
                     # Give branch nodes extra vertical space / 为分支节点提供额外垂直空间
-                    y += y_spacing * 0.1
+                    y += v_spacing * 0.1
                 elif node_id in structure_analysis['merge_nodes']:
                     # Give merge nodes extra space too / 为合并节点也提供额外空间
-                    y -= y_spacing * 0.1
+                    y -= v_spacing * 0.1
                 
                 # Fine-tune position based on text length / 根据文本长度微调位置
                 text_length = len(node.get('label', ''))
                 if text_length > text_analysis["avg_text_length"] * 1.5:
                     # Give more space to long text nodes / 为长文本节点提供更多空间
                     if row < rows - 1:  # Not the last row
-                        y -= y_spacing * 0.1
+                        y -= v_spacing * 0.1
                 
                 # 最终边界检查（在微调后）
                 x = max(self.margin_x + self.node_width/2, 
@@ -1675,6 +1746,21 @@ class OptimizedFlowchartGenerator:
                 positions[node['id']] = (x, y)
         
         return positions
+
+    def _calculate_branch_aware_positions(self, nodes: List[Dict], connections: List[Dict], layout: str, canvas_width: float, canvas_height: float, rows: int, cols: int) -> Dict[str, Tuple[float, float]]:
+        """Calculate branch-aware node positions to prevent overlap in branching scenarios / 计算分支感知的节点位置以防止分支场景中的重叠"""
+        # 分析流程图结构，获取分支信息
+        structure_analysis = self._analyze_flowchart_structure(nodes, connections)
+        max_branches = structure_analysis.get('max_branches', 0)
+        
+        # 使用动态间距计算
+        dynamic_h_spacing, dynamic_v_spacing = self._calculate_dynamic_spacing(len(nodes), layout, max_branches)
+        
+        # 调用自适应位置计算方法，传入动态间距
+        return self._calculate_adaptive_positions_with_spacing(
+            nodes, layout, canvas_width, canvas_height, rows, cols, 
+            dynamic_h_spacing, dynamic_v_spacing, structure_analysis
+        )
     
     def _calculate_free_layout_positions(self, nodes: List[Dict], connections: List[Dict], layout: str, canvas_width: float, canvas_height: float) -> Dict[str, Tuple[float, float]]:
         """Calculate free layout positions for branching flowcharts / 计算分支流程图的自由布局位置"""
@@ -1791,14 +1877,21 @@ class OptimizedFlowchartGenerator:
         has_branch_nodes = any(node_id in structure_analysis['branch_nodes'] for node_id in node_ids)
         has_decision_nodes = any(node_id in structure_analysis.get('decision_nodes', []) for node_id in node_ids)
         
-        # 根据节点类型调整间距
+        # 根据节点类型和分支数量调整间距
         if has_branch_nodes or has_decision_nodes:
             # 分支/决策节点场景：需要更多间距防止重叠
-            spacing_factor = base_spacing_factor * 1.5  # 分支场景增加50%间距
+            max_branches = structure_analysis.get('max_branches', 0)
             
-            # 组织架构等复杂树形结构进一步增强
-            if structure_analysis.get('max_branches', 0) > 3:
-                spacing_factor *= 1.3  # 复杂多分支再增加30%
+            if max_branches <= 2:
+                spacing_factor = base_spacing_factor * 1.2  # 2个分支增加20%
+            elif max_branches <= 3:
+                spacing_factor = base_spacing_factor * 1.5  # 3个分支增加50%
+            elif max_branches <= 5:
+                spacing_factor = base_spacing_factor * 2.0  # 4-5个分支增加100%
+            elif max_branches <= 8:
+                spacing_factor = base_spacing_factor * 2.8  # 6-8个分支增加180%
+            else:
+                spacing_factor = base_spacing_factor * 3.5  # 9个以上分支增加250%
         else:
             # 普通节点：使用标准间距
             spacing_factor = base_spacing_factor
@@ -1807,7 +1900,7 @@ class OptimizedFlowchartGenerator:
         effective_height = available_height * 0.85  # 使用85%防止边缘溢出，留15%空间
         
         # 计算增强的最小安全间距（绝对防重叠）
-        min_safe_spacing = self.node_height + 1.2  # 节点高度 + 更大的安全空隙
+        min_safe_spacing = self.node_height * 1.8  # 增加最小安全间距
         node_spacing = max(min_safe_spacing, (effective_height / max(1, node_count - 1)) if node_count > 1 else 0)
         node_spacing *= spacing_factor
         
@@ -1853,14 +1946,21 @@ class OptimizedFlowchartGenerator:
         has_branch_nodes = any(node_id in structure_analysis['branch_nodes'] for node_id in node_ids)
         has_decision_nodes = any(node_id in structure_analysis.get('decision_nodes', []) for node_id in node_ids)
         
-        # 根据节点类型调整间距
+        # 根据节点类型和分支数量调整间距
         if has_branch_nodes or has_decision_nodes:
             # 分支/决策节点场景：需要更多间距防止重叠
-            spacing_factor = base_spacing_factor * 1.5  # 分支场景增加50%间距
+            max_branches = structure_analysis.get('max_branches', 0)
             
-            # 组织架构等复杂树形结构进一步增强
-            if structure_analysis.get('max_branches', 0) > 3:
-                spacing_factor *= 1.3  # 复杂多分支再增加30%
+            if max_branches <= 2:
+                spacing_factor = base_spacing_factor * 1.2  # 2个分支增加20%
+            elif max_branches <= 3:
+                spacing_factor = base_spacing_factor * 1.5  # 3个分支增加50%
+            elif max_branches <= 5:
+                spacing_factor = base_spacing_factor * 2.0  # 4-5个分支增加100%
+            elif max_branches <= 8:
+                spacing_factor = base_spacing_factor * 2.8  # 6-8个分支增加180%
+            else:
+                spacing_factor = base_spacing_factor * 3.5  # 9个以上分支增加250%
         else:
             # 普通节点：使用标准间距
             spacing_factor = base_spacing_factor
@@ -1869,7 +1969,7 @@ class OptimizedFlowchartGenerator:
         effective_width = available_width * 0.85  # 使用85%防止边缘溢出，留15%空间
         
         # 计算增强的最小安全间距（绝对防重叠）
-        min_safe_spacing = self.node_width + 1.2  # 节点宽度 + 更大的安全空隙
+        min_safe_spacing = self.node_width * 1.8  # 增加最小安全间距
         node_spacing = max(min_safe_spacing, (effective_width / max(1, node_count - 1)) if node_count > 1 else 0)
         node_spacing *= spacing_factor
         
