@@ -452,19 +452,18 @@ class ImprovedFlowchartRenderer:
             try:
                 if self.font_path:
                     font = ImageFont.truetype(self.font_path, self.font_size)
-                    print(f"Successfully loaded Chinese font: {self.font_path}")
-                else:
-                    print("No Chinese font path available")
+                    # print(f"Successfully loaded Chinese font: {self.font_path}")
+                # print("No Chinese font path available")
             except Exception as e:
-                print(f"Failed to load Chinese font: {e}")
+                # print(f"Failed to load Chinese font: {e}")
                 # 尝试加载备选字体
                 for fallback_font in self.fallback_fonts:
                     try:
                         font = ImageFont.truetype(fallback_font, self.font_size)
-                        print(f"Successfully loaded fallback Chinese font: {fallback_font}")
+                        # print(f"Successfully loaded fallback Chinese font: {fallback_font}")
                         break
                     except Exception as e:
-                        print(f"Failed to load fallback Chinese font {fallback_font}: {e}")
+                        # print(f"Failed to load fallback Chinese font {fallback_font}: {e}")
                         continue
         else:
             # 英文文本，尝试加载英文字体
@@ -481,45 +480,46 @@ class ImprovedFlowchartRenderer:
                     if os.path.exists(english_font):
                         try:
                             font = ImageFont.truetype(english_font, self.font_size)
-                            print(f"Successfully loaded English font: {english_font}")
+                            # print(f"Successfully loaded English font: {english_font}")
                             break
                         except Exception as e:
-                            print(f"Failed to load English font {english_font}: {e}")
+                            # print(f"Failed to load English font {english_font}: {e}")
                             continue
                 
                 # 如果英文字体加载失败，尝试使用中文字体
                 if not font and self.font_path:
                     font = ImageFont.truetype(self.font_path, self.font_size)
-                    print(f"Using Chinese font for English text: {self.font_path}")
+                    # print(f"Using Chinese font for English text: {self.font_path}")
             except Exception as e:
-                print(f"Failed to load any font for English text: {e}")
+                # print(f"Failed to load any font for English text: {e}")
+                pass
         
         # 尝试加载加粗字体 - 优先使用加粗字体
         try:
             if self.bold_font_path:
                 bold_font = ImageFont.truetype(self.bold_font_path, self.font_size)
-                print(f"Successfully loaded bold font: {self.bold_font_path}")
+                # print(f"Successfully loaded bold font: {self.bold_font_path}")
             else:
                 # 如果没有专门的加粗字体，尝试使用原始字体的加粗版本
                 if font and self.font_path:
                     try:
                         bold_font = ImageFont.truetype(self.font_path, self.font_size, index=1)
-                        print(f"Successfully loaded bold variant of main font")
+                        # print(f"Successfully loaded bold variant of main font")
                     except Exception as e:
-                        print(f"Failed to load bold variant: {e}")
+                        # print(f"Failed to load bold variant: {e}")
                         bold_font = font
                 else:
                     # 尝试加载备选加粗字体
                     for fallback_bold_font in self.fallback_bold_fonts:
                         try:
                             bold_font = ImageFont.truetype(fallback_bold_font, self.font_size)
-                            print(f"Successfully loaded fallback bold font: {fallback_bold_font}")
+                            # print(f"Successfully loaded fallback bold font: {fallback_bold_font}")
                             break
                         except Exception as e:
-                            print(f"Failed to load fallback bold font {fallback_bold_font}: {e}")
+                            # print(f"Failed to load fallback bold font {fallback_bold_font}: {e}")
                             continue
         except Exception as e:
-            print(f"Failed to load bold font: {e}")
+            # print(f"Failed to load bold font: {e}")
             # 如果加载加粗字体失败，使用普通字体
             bold_font = font
         
@@ -528,9 +528,9 @@ class ImprovedFlowchartRenderer:
             try:
                 font = ImageFont.load_default()
                 bold_font = font
-                print("Using default font")
+                # print("Using default font")
             except Exception as e:
-                print(f"Failed to load default font: {e}")
+                # print(f"Failed to load default font: {e}")
                 font = None
                 bold_font = None
         
@@ -555,11 +555,11 @@ class ImprovedFlowchartRenderer:
         # 绘制文本 - 优先使用加粗字体
         if bold_font or font:
             draw.text((text_x, text_y), text, fill=self.colors['text'], font=bold_font if bold_font else font)
-            print(f"Successfully drew text: {text}")
+            # print(f"Successfully drew text: {text}")
         else:
             # 如果没有可用字体，使用默认绘制方式
             draw.text((text_x, text_y), text, fill=self.colors['text'])
-            print(f"Drew text without font: {text}")
+            # print(f"Drew text without font: {text}")
     
     def _draw_smart_arrow_line(self, draw: ImageDraw.ImageDraw, from_pos: Tuple[int, int], to_pos: Tuple[int, int],
                               from_shape="rectangle", to_shape="rectangle", line_type="solid", 
@@ -1056,7 +1056,7 @@ class ImprovedFlowchartRenderer:
         
         # 如果还是没有找到可行路径，返回直接路径（即使会穿过节点）
         if best_path is None:
-            print("Warning: Could not find a path that avoids all nodes, using direct path")
+            # print("Warning: Could not find a path that avoids all nodes, using direct path")
             best_path = [from_pos, to_pos]
         
         return best_path
@@ -1203,26 +1203,26 @@ class ImprovedFlowchartRenderer:
         try:
             if self.font_path:
                 font = ImageFont.truetype(self.font_path, self.font_size - 2)
-                print(f"Successfully loaded font for edge label: {self.font_path}")
+                # print(f"Successfully loaded font for edge label: {self.font_path}")
         except Exception as e:
-            print(f"Failed to load font for edge label: {e}")
+            # print(f"Failed to load font for edge label: {e}")
             # 尝试加载备选字体
             for fallback_font in self.fallback_fonts:
                 try:
                     font = ImageFont.truetype(fallback_font, self.font_size - 2)
-                    print(f"Successfully loaded fallback font for edge label: {fallback_font}")
+                    # print(f"Successfully loaded fallback font for edge label: {fallback_font}")
                     break
                 except Exception as e:
-                    print(f"Failed to load fallback font for edge label {fallback_font}: {e}")
+                    # print(f"Failed to load fallback font for edge label {fallback_font}: {e}")
                     continue
         
         # 如果所有字体都加载失败，使用默认字体
         if not font:
             try:
                 font = ImageFont.load_default()
-                print("Using default font for edge label")
+                # print("Using default font for edge label")
             except Exception as e:
-                print(f"Failed to load default font for edge label: {e}")
+                # print(f"Failed to load default font for edge label: {e}")
                 font = None
         
         # 计算标签位置（在线的中点）
@@ -1266,7 +1266,7 @@ class ImprovedFlowchartRenderer:
             draw.text((text_x, text_y), label, fill=self.colors['text'], font=font)
         else:
             draw.text((text_x, text_y), label, fill=self.colors['text'])
-            print("Drew edge label without font")
+            # print("Drew edge label without font")
     
     def _get_label_color(self, label: str, from_node_id: str = "", to_node_id: str = "") -> str:
         """
@@ -1371,19 +1371,20 @@ class ImprovedFlowchartRenderer:
             try:
                 if self.font_path:
                     font = ImageFont.truetype(self.font_path, self.font_size - 2)
-                    print(f"Successfully loaded Chinese font for edge label: {self.font_path}")
+                    # print(f"Successfully loaded Chinese font for edge label: {self.font_path}")
                 else:
-                    print("No Chinese font path available for edge label")
+                    # print("No Chinese font path available for edge label")
+                    pass
             except Exception as e:
-                print(f"Failed to load Chinese font for edge label: {e}")
+                # print(f"Failed to load Chinese font for edge label: {e}")
                 # 尝试加载备选字体
                 for fallback_font in self.fallback_fonts:
                     try:
                         font = ImageFont.truetype(fallback_font, self.font_size - 2)
-                        print(f"Successfully loaded fallback Chinese font for edge label: {fallback_font}")
+                        # print(f"Successfully loaded fallback Chinese font for edge label: {fallback_font}")
                         break
                     except Exception as e:
-                        print(f"Failed to load fallback Chinese font for edge label {fallback_font}: {e}")
+                        # print(f"Failed to load fallback Chinese font for edge label {fallback_font}: {e}")
                         continue
         else:
             # 英文标签，尝试加载英文字体
@@ -1400,26 +1401,27 @@ class ImprovedFlowchartRenderer:
                     if os.path.exists(english_font):
                         try:
                             font = ImageFont.truetype(english_font, self.font_size - 2)
-                            print(f"Successfully loaded English font for edge label: {english_font}")
+                            # print(f"Successfully loaded English font for edge label: {english_font}")
                             break
                         except Exception as e:
-                            print(f"Failed to load English font for edge label {english_font}: {e}")
+                            # print(f"Failed to load English font for edge label {english_font}: {e}")
                             continue
                 
                 # 如果英文字体加载失败，尝试使用中文字体
                 if not font and self.font_path:
                     font = ImageFont.truetype(self.font_path, self.font_size - 2)
-                    print(f"Using Chinese font for English edge label: {self.font_path}")
+                    # print(f"Using Chinese font for English edge label: {self.font_path}")
             except Exception as e:
-                print(f"Failed to load any font for English edge label: {e}")
+                # print(f"Failed to load any font for English edge label: {e}")
+                pass
         
         # 如果所有字体都加载失败，使用默认字体
         if not font:
             try:
                 font = ImageFont.load_default()
-                print("Using default font for edge label")
+                # print("Using default font for edge label")
             except Exception as e:
-                print(f"Failed to load default font for edge label: {e}")
+                # print(f"Failed to load default font for edge label: {e}")
                 font = None
         
         # 计算标签位置（在线的中点，但稍微偏移以避免与线重叠）
@@ -1484,7 +1486,7 @@ class ImprovedFlowchartRenderer:
             draw.text((text_x, text_y), label, fill=self.colors['text'], font=font)
         else:
             draw.text((text_x, text_y), label, fill=self.colors['text'])
-            print("Drew edge label without font")
+            # print("Drew edge label without font")
 
 
 
@@ -1505,12 +1507,14 @@ class ImprovedFlowchartRenderer:
             # 检查内嵌字体是否存在
             if os.path.exists(embedded_font_path):
                 self.font_path = embedded_font_path
-                print(f"Using embedded font: {embedded_font_path}")
+                # print(f"Using embedded font: {embedded_font_path}")
                 return
             else:
-                print(f"Embedded font not found at: {embedded_font_path}")
+                # print(f"Embedded font not found at: {embedded_font_path}")
+                pass
         except Exception as e:
-            print(f"Error loading embedded font: {e}")
+            # print(f"Error loading embedded font: {e}")
+            pass
         
         # 如果内嵌字体不存在，尝试系统字体
         # 优化字体顺序，优先使用更现代的中文字体
@@ -1530,11 +1534,11 @@ class ImprovedFlowchartRenderer:
         for font_path in system_fonts:
             if os.path.exists(font_path):
                 self.font_path = font_path
-                print(f"Using system font: {font_path}")
+                # print(f"Using system font: {font_path}")
                 return
         
         # 如果都不存在，返回空字符串
-        print("No suitable font found, will use default font")
+        # print("No suitable font found, will use default font")
         self.font_path = ""
     
     def _get_fallback_fonts(self) -> List[str]:
@@ -1554,7 +1558,8 @@ class ImprovedFlowchartRenderer:
             if os.path.exists(embedded_font_path):
                 return [embedded_font_path]
         except Exception as e:
-            print(f"Error loading fallback font: {e}")
+            # print(f"Error loading fallback font: {e}")
+            pass
         
         # 系统备选字体 - 优化字体顺序，优先使用更现代的中文字体
         system_fonts = [
@@ -1602,12 +1607,14 @@ class ImprovedFlowchartRenderer:
             # 检查内嵌加粗字体是否存在
             if os.path.exists(embedded_bold_font_path):
                 self.bold_font_path = embedded_bold_font_path
-                print(f"Using embedded bold font: {embedded_bold_font_path}")
+                # print(f"Using embedded bold font: {embedded_bold_font_path}")
                 return
             else:
-                print(f"Embedded bold font not found at: {embedded_bold_font_path}")
+                # print(f"Embedded bold font not found at: {embedded_bold_font_path}")
+                pass
         except Exception as e:
-            print(f"Error loading embedded bold font: {e}")
+            # print(f"Error loading embedded bold font: {e}")
+            pass
         
         # 如果内嵌加粗字体不存在，尝试使用原始字体的加粗版本
         if self.font_path and os.path.exists(self.font_path):
@@ -1615,10 +1622,11 @@ class ImprovedFlowchartRenderer:
                 # 尝试使用字体的加粗版本
                 font = ImageFont.truetype(self.font_path, 14, index=1)
                 self.bold_font_path = self.font_path
-                print(f"Using bold variant of main font: {self.font_path}")
+                # print(f"Using bold variant of main font: {self.font_path}")
                 return
             except Exception as e:
-                print(f"Error using bold font variant: {e}")
+                # print(f"Error using bold font variant: {e}")
+                pass
         
         # 如果都不存在，尝试系统加粗字体
         # 优化字体顺序，优先使用更现代的中文字体
@@ -1639,11 +1647,11 @@ class ImprovedFlowchartRenderer:
         for font_path in system_fonts:
             if os.path.exists(font_path):
                 self.bold_font_path = font_path
-                print(f"Using system bold font: {font_path}")
+                # print(f"Using system bold font: {font_path}")
                 return
         
         # 如果都不存在，返回空字符串
-        print("No suitable bold font found, will use default font")
+        # print("No suitable bold font found, will use default font")
         self.bold_font_path = ""
     
     def _get_fallback_bold_fonts(self) -> List[str]:
@@ -1663,7 +1671,8 @@ class ImprovedFlowchartRenderer:
             if os.path.exists(embedded_bold_font_path):
                 return [embedded_bold_font_path]
         except Exception as e:
-            print(f"Error loading fallback bold font: {e}")
+            # print(f"Error loading fallback bold font: {e}")
+            pass
         
         # 如果内嵌加粗字体不存在，尝试使用原始字体的加粗版本
         if self.font_path and os.path.exists(self.font_path):
@@ -1703,7 +1712,7 @@ class ImprovedFlowchartRenderer:
         
         # 如果没有找到任何字体，返回默认字体
         if not existing_fonts:
-            print("No fallback bold fonts found, using default font")
+            # print("No fallback bold fonts found, using default font")
             return ["arial.ttf"]  # 默认字体
         
         return existing_fonts
