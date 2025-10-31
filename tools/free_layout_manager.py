@@ -65,15 +65,16 @@ class LayoutManager:
             node_width, node_height, horizontal_spacing, vertical_spacing
         )
     
-    def render(self, mermaid_code: str, layout_result: Dict[str, Any]) -> Image.Image:
+    def render(self, mermaid_code: str, layout_result: Dict[str, Any], description: str = "") -> Image.Image:
         """
         渲染流程图
         
         Args:
             mermaid_code: Mermaid代码
             layout_result: 布局结果
+            description: 流程图描述信息，显示在画布左上方
             
         Returns:
             渲染后的图像
         """
-        return self.flowchart_renderer.render_mermaid(mermaid_code, layout_result)
+        return self.flowchart_renderer.render_mermaid(mermaid_code, layout_result, description)

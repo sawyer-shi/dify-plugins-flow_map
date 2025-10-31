@@ -99,10 +99,11 @@ class MermaidParser:
                             "label": edge_label
                         })
             else:
-                # 可能是单独的节点定义
-                node = self._parse_node(line)
-                if node["id"]:
-                    nodes_map[node["id"]] = node
+                # 可能是单独的节点定义；仅接受合法的节点格式，忽略纯描述文本
+                if self._is_valid_node_def(line):
+                    node = self._parse_node(line)
+                    if node and node.get("id"):
+                        nodes_map[node["id"]] = node
         
         # 构建最终结果
         elements = []
@@ -171,7 +172,7 @@ class MermaidParser:
     def _split_by_connectors(self, line: str) -> List[str]:
         """按连接符分割行"""
         # 按优先级从高到低排序，避免短连接符匹配长连接符的一部分
-        connectors = ["-->", "-.->", "==>", "->", "---", "--", "==>", "=>"]
+        connectors = ["-->", "-.->", "==>", "->", "---", "--", "=>"]
         
         # 使用正则表达式分割，同时保留连接符
         pattern = "(" + "|".join(re.escape(conn) for conn in connectors) + ")"
@@ -181,6 +182,28 @@ class MermaidParser:
         result = [part for part in parts if part.strip()]
         
         return result
+    
+    def _is_valid_node_def(self, line: str) -> bool:
+        """判断是否是合法的节点定义行，避免将纯描述文本误识别为节点"""
+        s = line.strip()
+        # 必须以标识符开头
+        if not re.match(r"^\\w+", s):
+            return False
+        # 支持的节点格式
+        patterns = [
+            r'^\\w+\\[(.*?)\\]$',         # 矩形
+            r'^\\w+\\((.*?)\\)$',         # 圆角矩形
+            r'^\\w+\\{(.*?)\\}$',         # 菱形
+            r'^\\w+>(.*?)\\]$',             # 不对称形状
+            r'^\\w+\\(\\((.*?)\\)\\)$',   # 圆形
+            r'^\\w+/.*?/$',                   # 平行四边形
+            r'^\\w+\\[::(.*?)\\]$',       # 圆柱形
+            r'^\\w+\\[\\[(.*?)\\]\\]$'    # 子程序
+        ]
+        for p in patterns:
+            if re.match(p, s):
+                return True
+        return False
     
     def _parse_node(self, node_str: str) -> Dict[str, Any]:
         """解析节点字符串，提取ID、标签和形状"""
@@ -257,7 +280,7 @@ class MermaidParser:
             return {"type": "node", "id": node_id, "label": node_label, "shape": node_shape}
         
         # A[::Text] - 圆柱形
-        match = re.match(r'^(\w+)\[\[(.*?)\]\]$', node_str)
+        match = re.match(r'^(\w+)\[::(.*?)\]$', node_str)
         if match:
             node_id = match.group(1)
             node_label = match.group(2)

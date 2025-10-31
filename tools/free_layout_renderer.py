@@ -60,25 +60,27 @@ class ImprovedFlowchartRenderer:
         # 备选加粗字体列表
         self.fallback_bold_fonts = self._get_fallback_bold_fonts()
     
-    def render_mermaid(self, mermaid_code: str, layout_result: Dict[str, Any]) -> Image.Image:
+    def render_mermaid(self, mermaid_code: str, layout_result: Dict[str, Any], description: str = "") -> Image.Image:
         """
         渲染Mermaid流程图
         
         Args:
             mermaid_code: Mermaid代码
             layout_result: 布局结果，包含节点位置和连接信息
+            description: 流程图描述信息，显示在画布左上方
             
         Returns:
             渲染后的图像
         """
-        return self._render_flowchart(layout_result)
+        return self._render_flowchart(layout_result, description)
     
-    def _render_flowchart(self, layout_result: Dict[str, Any]) -> Image.Image:
+    def _render_flowchart(self, layout_result: Dict[str, Any], description: str = "") -> Image.Image:
         """
         渲染流程图
         
         Args:
             layout_result: 布局结果
+            description: 流程图描述信息，显示在画布左上方
             
         Returns:
             渲染后的图像
@@ -86,6 +88,13 @@ class ImprovedFlowchartRenderer:
         # 创建画布
         canvas_width = layout_result.get('canvas_width', 800)
         canvas_height = layout_result.get('canvas_height', 600)
+        
+        # 如果有描述信息，增加画布高度以容纳描述文本
+        description_height = 0
+        if description:
+            # 估算描述文本所需高度
+            description_height = self._estimate_description_height(description)
+            canvas_height += description_height + 20  # 额外20像素间距
         
         # 添加边距
         margin = 50
@@ -96,14 +105,24 @@ class ImprovedFlowchartRenderer:
         image = Image.new('RGB', (canvas_width, canvas_height), self.colors['background'])
         draw = ImageDraw.Draw(image)
         
+        # 绘制描述信息（如果有）
+        if description:
+            # 调整节点位置，为描述信息留出空间
+            description_y = margin
+            self._draw_description(draw, description, margin, description_y, canvas_width - margin * 2)
+            # 增加额外的边距，确保描述信息不与节点重叠
+            extra_margin = description_height + 20
+        else:
+            extra_margin = 0
+        
         # 获取节点和连接信息
         nodes = layout_result.get('nodes', {})
         connections = layout_result.get('connections', [])
         
         # 绘制节点
         for node_id, node_data in nodes.items():
-            # 调整位置，添加边距
-            pos = (node_data['x'] + margin, node_data['y'] + margin)
+            # 调整位置，添加边距和描述信息空间
+            pos = (node_data['x'] + margin, node_data['y'] + margin + extra_margin)
             self._draw_node(draw, node_id, node_data, pos)
         
         # 绘制连接线（使用改进的算法，确保不穿过节点）
@@ -113,8 +132,8 @@ class ImprovedFlowchartRenderer:
             line_type = connection.get('line_type', 'solid')
             label = connection.get('label', None)
             
-            from_pos = (nodes[from_node]['x'] + margin, nodes[from_node]['y'] + margin)
-            to_pos = (nodes[to_node]['x'] + margin, nodes[to_node]['y'] + margin)
+            from_pos = (nodes[from_node]['x'] + margin, nodes[from_node]['y'] + margin + extra_margin)
+            to_pos = (nodes[to_node]['x'] + margin, nodes[to_node]['y'] + margin + extra_margin)
             
             # 使用改进的连线算法，确保不穿过节点
             self._draw_smart_arrow_line(
@@ -1758,6 +1777,134 @@ class ImprovedFlowchartRenderer:
         
         # 转换回十六进制
         return f"#{r:02x}{g:02x}{b:02x}"
+    
+    def _estimate_description_height(self, description: str) -> int:
+        """
+        估算描述文本所需的高度
+        
+        Args:
+            description: 描述文本
+            
+        Returns:
+            估算的高度（像素）
+        """
+        if not description:
+            return 0
+        
+        # 尝试加载字体
+        try:
+            font = ImageFont.truetype(self.font_path, self.font_size)
+        except:
+            try:
+                # 尝试备选字体
+                for font_path in self.fallback_fonts:
+                    try:
+                        font = ImageFont.truetype(font_path, self.font_size)
+                        break
+                    except:
+                        continue
+                else:
+                    # 如果所有字体都失败，使用默认字体
+                    font = ImageFont.load_default()
+            except:
+                font = ImageFont.load_default()
+        
+        # 计算文本尺寸
+        try:
+            # 获取绘制边界
+            bbox = font.getbbox(description)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+        except:
+            # 如果无法获取边界，使用估算值
+            char_count = len(description)
+            text_width = char_count * self.font_size * 0.6  # 估算字符宽度
+            text_height = self.font_size * 1.2  # 估算字符高度
+        
+        # 估算最大行宽（画布宽度减去边距）
+        max_line_width = 800 - 100  # 假设画布宽度为800，边距为50*2
+        
+        # 计算需要的行数
+        if text_width <= max_line_width:
+            lines = 1
+        else:
+            lines = math.ceil(text_width / max_line_width)
+        
+        # 计算总高度（行数 * 行高 + 行间距）
+        line_height = text_height
+        total_height = lines * line_height + (lines - 1) * 5  # 行间距为5像素
+        
+        return int(total_height)
+    
+    def _draw_description(self, draw: ImageDraw.ImageDraw, description: str, 
+                         x: int, y: int, max_width: int):
+        """
+        在画布左上方绘制描述文本
+        
+        Args:
+            draw: ImageDraw对象
+            description: 描述文本
+            x: 起始x坐标
+            y: 起始y坐标
+            max_width: 文本最大宽度
+        """
+        if not description:
+            return
+        
+        # 尝试加载字体
+        try:
+            font = ImageFont.truetype(self.font_path, self.font_size)
+        except:
+            try:
+                # 尝试备选字体
+                for font_path in self.fallback_fonts:
+                    try:
+                        font = ImageFont.truetype(font_path, self.font_size)
+                        break
+                    except:
+                        continue
+                else:
+                    # 如果所有字体都失败，使用默认字体
+                    font = ImageFont.load_default()
+            except:
+                font = ImageFont.load_default()
+        
+        # 文本换行处理
+        words = description.split(' ')
+        lines = []
+        current_line = ""
+        
+        for word in words:
+            test_line = current_line + (" " if current_line else "") + word
+            try:
+                # 获取文本宽度
+                bbox = font.getbbox(test_line)
+                text_width = bbox[2] - bbox[0]
+            except:
+                # 如果无法获取宽度，使用估算值
+                text_width = len(test_line) * self.font_size * 0.6
+            
+            if text_width <= max_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                    current_line = word
+                else:
+                    # 单个词太长，强制换行
+                    lines.append(word)
+        
+        if current_line:
+            lines.append(current_line)
+        
+        # 绘制每一行文本
+        line_height = self.font_size * 1.2
+        y_offset = y
+        
+        for line in lines:
+            # 绘制文本
+            draw.text((x, y_offset), line, fill=self.colors['text'], font=font)
+            y_offset += line_height + 5  # 行间距为5像素
     
     def _adjust_color_hue(self, hex_color: str, hue_shift: int) -> str:
         """
