@@ -136,12 +136,24 @@ class ImprovedFlowchartRenderer:
             node_data: 节点数据
             pos: 节点位置
         """
-        node_type = node_data.get('type', 'operation')
-        shape = node_data.get('shape', 'rectangle')
+        # 归一化形状与类型，缺省时根据形状/文本智能推断
+        raw_shape = node_data.get('shape', 'rectangle')
+        shape = 'rounded_rectangle' if raw_shape == 'rounded' else raw_shape
         text = node_data.get('text', node_id)
+        raw_type = node_data.get('type') or node_data.get('node_type')
+        if not raw_type:
+            t_lower = str(text).lower()
+            if shape == 'diamond':
+                raw_type = 'decision'
+            elif ('开始' in str(text)) or ('start' in t_lower):
+                raw_type = 'start'
+            elif ('结束' in str(text)) or ('完成' in str(text)) or ('end' in t_lower):
+                raw_type = 'end'
+            else:
+                raw_type = 'operation'
         
         # 获取填充颜色，考虑节点类型和形状
-        fill_color = self._get_node_fill_color(node_type, shape)
+        fill_color = self._get_node_fill_color(raw_type, shape)
         
         # 根据形状绘制节点
         if shape == 'rectangle':
@@ -1679,62 +1691,48 @@ class ImprovedFlowchartRenderer:
     
     def _get_node_fill_color(self, node_type: str, node_shape: str = "rectangle") -> str:
         """
-        根据节点类型和形状获取填充颜色，实现更好的视觉区分
-        
-        Args:
-            node_type: 节点类型
-            node_shape: 节点形状
-            
-        Returns:
-            填充颜色
+        根据节点类型和形状获取填充颜色（遵循规范的浅色系）
         """
-        # 首先根据节点类型确定基础颜色
-        if node_type == "start":
-            # 开始节点：使用更明显的绿色
-            base_color = "#4CAF50"  # 更鲜艳的绿色
-        elif node_type == "end":
-            # 结束节点：使用更明显的灰色
-            base_color = "#9E9E9E"  # 更明显的灰色
-        elif node_type == "operation":
-            # 处理节点：使用蓝色
-            base_color = "#2196F3"  # 蓝色
-        elif node_type == "decision":
-            # 判断节点：使用更明显的黄色
-            base_color = "#FFC107"  # 更鲜艳的黄色
-        elif node_type == "inputoutput":
-            # 输入输出节点：使用紫色
-            base_color = "#9C27B0"  # 紫色
-        else:
-            base_color = "#03A9F4"  # 青色作为默认颜色
-        
-        # 根据形状进一步调整颜色，增加视觉区分度
-        if node_shape == "circle":
-            # 圆形节点：添加蓝色调
-            return self._adjust_color_hue(base_color, 200)
-        elif node_shape == "diamond":
-            # 菱形节点：如果是判断节点，保持黄色；否则调整色调
-            if node_type == "decision":
-                return "#FFE082"  # 更淡的黄色
+        # 归一化输入
+        node_type = (node_type or "").strip().lower()
+        node_shape = (node_shape or "rectangle").strip().lower()
+
+        # 类型到颜色的映射（优先使用类内 colors 配置）
+        type_to_color = {
+            'start': self.colors.get('start_node', '#E6FFE6'),
+            'end': self.colors.get('end_node', '#F0F0F0'),
+            'decision': self.colors.get('decision_node', '#FFFFCC'),
+            'process': self.colors.get('process_node', '#F0F8FF'),
+            'operation': self.colors.get('process_node', '#F0F8FF'),
+            'data': self.colors.get('data_node', '#E0FFFF'),
+            'input': self.colors.get('data_node', '#E0FFFF'),
+            'output': self.colors.get('data_node', '#E0FFFF'),
+            'subroutine': self.colors.get('subroutine_node', '#F5F5DC'),
+        }
+
+        # 当未提供类型时，尝试基于形状推断
+        if not node_type:
+            if node_shape == 'diamond':
+                node_type = 'decision'
+            elif node_shape in ('parallelogram',):
+                node_type = 'data'
+            elif node_shape == 'circle':
+                return self.colors.get('circle_node', self.colors.get('process_node', '#F0F8FF'))
             else:
-                return self._adjust_color_hue(base_color, 60)
-        elif node_shape == "parallelogram":
-            # 平行四边形节点：添加绿色调
-            return self._adjust_color_hue(base_color, 120)
-        elif node_shape == "subroutine":
-            # 子程序节点：添加紫色调
-            return self._adjust_color_hue(base_color, 270)
-        elif node_shape == "cylinder":
-            # 圆柱形节点：添加红色调
-            return self._adjust_color_hue(base_color, 340)
-        elif node_shape == "stadium":
-            # 体育场形节点：添加青色调
-            return self._adjust_color_hue(base_color, 180)
-        elif node_shape == "rounded_rectangle":
-            # 圆角矩形节点：稍微调亮
-            return self._adjust_color_brightness(base_color, 1.2)
-        else:
-            # 默认矩形节点：使用基础颜色，但稍微调亮
-            return self._adjust_color_brightness(base_color, 1.1)
+                node_type = 'process'
+
+        # 形状优先级覆盖（如菱形、圆形有专属颜色）
+        if node_shape == 'diamond':
+            return self.colors.get('diamond_node', type_to_color.get('decision', '#FFFFCC'))
+        if node_shape == 'circle':
+            return self.colors.get('circle_node', type_to_color.get(node_type, self.colors.get('node_fill', '#F0F8FF')))
+
+        # 其余情况按节点类型返回
+        if node_type in type_to_color:
+            return type_to_color[node_type]
+
+        # 兜底颜色
+        return self.colors.get('node_fill', '#F0F8FF')
     
     def _adjust_color_brightness(self, hex_color: str, factor: float) -> str:
         """
