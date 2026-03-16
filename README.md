@@ -2,18 +2,19 @@
 
 **Author:** sawyer-shi  
 **Email:** sawyer36@foxmail.com  
-**Version:** 0.0.2  
+**Version:** 0.0.3  
 **Type:** Dify Plugin  
 **Repository:** [GitHub](https://github.com/sawyer-shi/dify-plugins-flow_map)
 
 ### Version Information
 
-- **Current Version**: v0.0.2
-- **Release Date**: 2025-10-18
+- **Current Version**: v0.0.3
+- **Release Date**: 2026-03-15
 - **Compatibility**: Dify Plugin Framework
 - **Python Version**: 3.12+
 
 #### Version History
+- **v0.0.3** (2026-03-15): Updated element overlap prevention algorithm to ensure elements do not cover each other.
 - **v0.0.2** (2025-10-18): Added free layout flowchart functionality, fixed bugs from previous versions, improved software stability and reliability.
 - **v0.0.1** (2025-09-12): Initial release with smart branch detection, colorful arrow labels, and advanced layout optimization
 

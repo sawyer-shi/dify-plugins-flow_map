@@ -12,6 +12,7 @@ import io
 import base64
 import re
 import json
+import math
 import datetime
 from typing import Any, Dict, List, Tuple, Optional
 
@@ -1299,8 +1300,8 @@ class OptimizedFlowchartGenerator:
                 canvas_width = max(8, base_canvas_size * 0.6)  # 更紧凑的水平空间
                 canvas_height = max(12, base_canvas_size * node_count_factor)  # 减小最小尺寸
             
-            # 更严格的尺寸限制：防止画布过大但确保足够空间
-            max_dimension = 60  # 进一步减小最大尺寸限制
+            # 画布上限：复杂分支需要更大空间，避免节点/文本挤压重叠
+            max_dimension = 90 if structure_analysis['has_complex_branches'] else 72
             canvas_width = min(canvas_width, max_dimension)
             canvas_height = min(canvas_height, max_dimension)
             
@@ -1470,7 +1471,7 @@ class OptimizedFlowchartGenerator:
         return (node_index % 3) + 1  # 1-3级循环
     
     def _resolve_node_overlaps(self, positions: Dict[str, Tuple[float, float]], 
-                             nodes: List[Dict], structure_analysis: Dict = None) -> Dict[str, Tuple[float, float]]:
+                             nodes: List[Dict], structure_analysis: Optional[Dict[str, Any]] = None) -> Dict[str, Tuple[float, float]]:
         """
         增强的节点重叠解决方法，特别针对多分支场景优化
         
@@ -1766,6 +1767,7 @@ class OptimizedFlowchartGenerator:
         """Calculate free layout positions for branching flowcharts / 计算分支流程图的自由布局位置"""
         positions = {}
         structure_analysis = self._analyze_flowchart_structure(nodes, connections)
+        node_size_map = {node['id']: self._get_node_dimensions(node) for node in nodes}
         
         # Build node hierarchy based on connections / 根据连接构建节点层次结构
         node_levels = self._build_node_hierarchy(nodes, connections)
@@ -1800,7 +1802,16 @@ class OptimizedFlowchartGenerator:
                     positions[node_id] = (level_x, y)
                 else:
                     # Multiple nodes distributed vertically / 多个节点垂直分布
-                    self._distribute_nodes_vertically(node_ids, positions, level_x, available_height, margin_y, canvas_height, structure_analysis)
+                    self._distribute_nodes_vertically(
+                        node_ids,
+                        positions,
+                        level_x,
+                        available_height,
+                        margin_y,
+                        canvas_height,
+                        structure_analysis,
+                        node_size_map
+                    )
         
         else:  # top-bottom
             # Free vertical layout / 自由垂直布局
@@ -1817,7 +1828,27 @@ class OptimizedFlowchartGenerator:
                     positions[node_id] = (x, level_y)
                 else:
                     # Multiple nodes distributed horizontally / 多个节点水平分布
-                    self._distribute_nodes_horizontally(node_ids, positions, level_y, available_width, margin_x, canvas_width, structure_analysis)
+                    self._distribute_nodes_horizontally(
+                        node_ids,
+                        positions,
+                        level_y,
+                        available_width,
+                        margin_x,
+                        canvas_width,
+                        structure_analysis,
+                        node_size_map
+                    )
+
+        # 最终防重叠收敛：基于动态节点尺寸进行碰撞消解
+        positions = self._resolve_dynamic_node_overlaps(
+            positions,
+            nodes,
+            structure_analysis,
+            canvas_width,
+            canvas_height,
+            layout,
+            node_size_map
+        )
         
         return positions
     
@@ -1865,143 +1896,156 @@ class OptimizedFlowchartGenerator:
         
         return node_levels
     
-    def _distribute_nodes_vertically(self, node_ids: List[str], positions: Dict, x: float, available_height: float, margin_y: float, canvas_height: float, structure_analysis: Dict):
+    def _distribute_nodes_vertically(self, node_ids: List[str], positions: Dict, x: float, available_height: float, margin_y: float, canvas_height: float, structure_analysis: Dict, node_size_map: Dict[str, Tuple[float, float]]):
         """Distribute nodes vertically with enhanced branch-aware spacing / 增强分支感知的垂直分布节点"""
         node_count = len(node_ids)
-        
-        # 增强防重叠机制：特别针对组织架构等多分支场景
-        # 根据分支复杂度动态调整间距因子
-        base_spacing_factor = 2.4  # 基础间距因子大幅提升
-        
-        # 检测是否包含分支节点
-        has_branch_nodes = any(node_id in structure_analysis['branch_nodes'] for node_id in node_ids)
-        has_decision_nodes = any(node_id in structure_analysis.get('decision_nodes', []) for node_id in node_ids)
-        
-        # 根据节点类型和分支数量调整间距
-        if has_branch_nodes or has_decision_nodes:
-            # 分支/决策节点场景：需要更多间距防止重叠
-            max_branches = structure_analysis.get('max_branches', 0)
-            
-            if max_branches <= 2:
-                spacing_factor = base_spacing_factor * 1.2  # 2个分支增加20%
-            elif max_branches <= 3:
-                spacing_factor = base_spacing_factor * 1.5  # 3个分支增加50%
-            elif max_branches <= 5:
-                spacing_factor = base_spacing_factor * 2.0  # 4-5个分支增加100%
-            elif max_branches <= 8:
-                spacing_factor = base_spacing_factor * 2.8  # 6-8个分支增加180%
-            else:
-                spacing_factor = base_spacing_factor * 3.5  # 9个以上分支增加250%
-        else:
-            # 普通节点：使用标准间距
-            spacing_factor = base_spacing_factor
-        
-        # 计算有效空间，留出更多安全边距
-        effective_height = available_height * 0.85  # 使用85%防止边缘溢出，留15%空间
-        
-        # 计算增强的最小安全间距（绝对防重叠）
-        min_safe_spacing = self.node_height * 1.8  # 增加最小安全间距
-        node_spacing = max(min_safe_spacing, (effective_height / max(1, node_count - 1)) if node_count > 1 else 0)
-        node_spacing *= spacing_factor
-        
-        # 确保最小间距不会太大导致溢出
-        max_allowed_spacing = effective_height / max(1, node_count - 1) if node_count > 1 else node_spacing
-        if node_spacing > max_allowed_spacing * 2:  # 防止间距过大
-            node_spacing = max_allowed_spacing * 1.8  # 限制为合理倍数
-        
-        # 垂直居中组
-        total_height = (node_count - 1) * node_spacing if node_count > 1 else 0
+        if node_count == 0:
+            return
+
+        max_branches = structure_analysis.get('max_branches', 0)
+        gap = self.node_height * (0.45 + min(max_branches, 8) * 0.08)
+        heights = [node_size_map.get(node_id, (self.node_width, self.node_height))[1] for node_id in node_ids]
+
+        total_height = sum(heights) + gap * max(0, node_count - 1)
+        safe_margin_y = margin_y + 0.3
+        available_span = max(0.1, canvas_height - 2 * safe_margin_y)
+
+        if node_count > 1 and total_height > available_span:
+            compressed_gap = (available_span - sum(heights)) / (node_count - 1)
+            gap = max(self.node_height * 0.12, compressed_gap)
+            total_height = sum(heights) + gap * (node_count - 1)
+
         start_y = canvas_height / 2 + total_height / 2
-        
-        for i, node_id in enumerate(node_ids):
-            y = start_y - i * node_spacing
-            # 增强的边界检查：确保节点完全在画布内，不会被裁切
-            safe_margin_y = margin_y + self.node_height/2 + 0.5  # 增强安全边距
-            max_y = canvas_height - safe_margin_y
-            min_y = safe_margin_y
-            
-            # 边界调整：如果超出范围，重新分布所有节点
-            if y > max_y or y < min_y:
-                # 重新计算更紧凑但安全的间距
-                safe_total_height = canvas_height - 2 * safe_margin_y
-                safe_spacing = safe_total_height / max(1, node_count - 1) if node_count > 1 else 0
-                safe_spacing = max(min_safe_spacing, safe_spacing)
-                
-                # 重新分布所有节点
-                safe_start_y = canvas_height - safe_margin_y - (node_count - 1) * safe_spacing / 2
-                y = safe_start_y - i * safe_spacing
-                y = max(min_y, min(max_y, y))  # 最终边界保护
-                
-            positions[node_id] = (x, y)
+        cursor = start_y
+        ys = []
+        for i, h in enumerate(heights):
+            center_y = cursor - h / 2
+            ys.append(center_y)
+            cursor = center_y - h / 2 - (gap if i < node_count - 1 else 0)
+
+        # 以整体平移的方式进行边界修正，避免逐点 clamp 造成堆叠
+        top_limit = canvas_height - safe_margin_y - heights[0] / 2
+        bottom_limit = safe_margin_y + heights[-1] / 2
+        shift = 0.0
+        if ys and ys[0] > top_limit:
+            shift = top_limit - ys[0]
+        if ys and ys[-1] < bottom_limit:
+            shift = bottom_limit - ys[-1]
+
+        for node_id, y in zip(node_ids, ys):
+            positions[node_id] = (x, y + shift)
     
-    def _distribute_nodes_horizontally(self, node_ids: List[str], positions: Dict, y: float, available_width: float, margin_x: float, canvas_width: float, structure_analysis: Dict):
+    def _distribute_nodes_horizontally(self, node_ids: List[str], positions: Dict, y: float, available_width: float, margin_x: float, canvas_width: float, structure_analysis: Dict, node_size_map: Dict[str, Tuple[float, float]]):
         """Distribute nodes horizontally with enhanced branch-aware spacing / 增强分支感知的水平分布节点"""
         node_count = len(node_ids)
-        
-        # 增强防重叠机制：特别针对组织架构等多分支场景
-        # 根据分支复杂度动态调整间距因子
-        base_spacing_factor = 2.4  # 基础间距因子大幅提升
-        
-        # 检测是否包含分支节点
-        has_branch_nodes = any(node_id in structure_analysis['branch_nodes'] for node_id in node_ids)
-        has_decision_nodes = any(node_id in structure_analysis.get('decision_nodes', []) for node_id in node_ids)
-        
-        # 根据节点类型和分支数量调整间距
-        if has_branch_nodes or has_decision_nodes:
-            # 分支/决策节点场景：需要更多间距防止重叠
-            max_branches = structure_analysis.get('max_branches', 0)
-            
-            if max_branches <= 2:
-                spacing_factor = base_spacing_factor * 1.2  # 2个分支增加20%
-            elif max_branches <= 3:
-                spacing_factor = base_spacing_factor * 1.5  # 3个分支增加50%
-            elif max_branches <= 5:
-                spacing_factor = base_spacing_factor * 2.0  # 4-5个分支增加100%
-            elif max_branches <= 8:
-                spacing_factor = base_spacing_factor * 2.8  # 6-8个分支增加180%
-            else:
-                spacing_factor = base_spacing_factor * 3.5  # 9个以上分支增加250%
-        else:
-            # 普通节点：使用标准间距
-            spacing_factor = base_spacing_factor
-        
-        # 计算有效空间，留出更多安全边距
-        effective_width = available_width * 0.85  # 使用85%防止边缘溢出，留15%空间
-        
-        # 计算增强的最小安全间距（绝对防重叠）
-        min_safe_spacing = self.node_width * 1.8  # 增加最小安全间距
-        node_spacing = max(min_safe_spacing, (effective_width / max(1, node_count - 1)) if node_count > 1 else 0)
-        node_spacing *= spacing_factor
-        
-        # 确保最小间距不会太大导致溢出
-        max_allowed_spacing = effective_width / max(1, node_count - 1) if node_count > 1 else node_spacing
-        if node_spacing > max_allowed_spacing * 2:  # 防止间距过大
-            node_spacing = max_allowed_spacing * 1.8  # 限制为合理倍数
-        
-        # 水平居中组
-        total_width = (node_count - 1) * node_spacing if node_count > 1 else 0
-        start_x = margin_x + available_width / 2 - total_width / 2
-        
-        for i, node_id in enumerate(node_ids):
-            x = start_x + i * node_spacing
-            # 增强的边界检查：确保节点完全在画布内，不会被裁切
-            safe_margin_x = margin_x + self.node_width/2 + 0.5  # 增强安全边距
-            max_x = canvas_width - safe_margin_x
-            min_x = safe_margin_x
-            
-            # 边界调整：如果超出范围，重新分布所有节点
-            if x > max_x or x < min_x:
-                # 重新计算更紧凑但安全的间距
-                safe_total_width = canvas_width - 2 * safe_margin_x
-                safe_spacing = safe_total_width / max(1, node_count - 1) if node_count > 1 else 0
-                safe_spacing = max(min_safe_spacing, safe_spacing)
-                
-                # 重新分布所有节点
-                safe_start_x = margin_x + safe_margin_x + (node_count - 1) * safe_spacing / 2
-                x = safe_start_x - i * safe_spacing
-                x = max(min_x, min(max_x, x))  # 最终边界保护
-                
-            positions[node_id] = (x, y)
+        if node_count == 0:
+            return
+
+        max_branches = structure_analysis.get('max_branches', 0)
+        gap = self.node_width * (0.45 + min(max_branches, 8) * 0.08)
+        widths = [node_size_map.get(node_id, (self.node_width, self.node_height))[0] for node_id in node_ids]
+
+        total_width = sum(widths) + gap * max(0, node_count - 1)
+        safe_margin_x = margin_x + 0.3
+        available_span = max(0.1, canvas_width - 2 * safe_margin_x)
+
+        if node_count > 1 and total_width > available_span:
+            compressed_gap = (available_span - sum(widths)) / (node_count - 1)
+            gap = max(self.node_width * 0.12, compressed_gap)
+            total_width = sum(widths) + gap * (node_count - 1)
+
+        start_x = canvas_width / 2 - total_width / 2
+        cursor = start_x
+        xs = []
+        for i, w in enumerate(widths):
+            center_x = cursor + w / 2
+            xs.append(center_x)
+            cursor = center_x + w / 2 + (gap if i < node_count - 1 else 0)
+
+        # 以整体平移方式修正边界，避免挤压成重叠点
+        left_limit = safe_margin_x + widths[0] / 2
+        right_limit = canvas_width - safe_margin_x - widths[-1] / 2
+        shift = 0.0
+        if xs and xs[0] < left_limit:
+            shift = left_limit - xs[0]
+        if xs and xs[-1] > right_limit:
+            shift = right_limit - xs[-1]
+
+        for node_id, x in zip(node_ids, xs):
+            positions[node_id] = (x + shift, y)
+
+    def _resolve_dynamic_node_overlaps(
+        self,
+        positions: Dict[str, Tuple[float, float]],
+        nodes: List[Dict],
+        structure_analysis: Dict[str, Any],
+        canvas_width: float,
+        canvas_height: float,
+        layout: str,
+        node_size_map: Dict[str, Tuple[float, float]]
+    ) -> Dict[str, Tuple[float, float]]:
+        """Resolve node overlaps using real dynamic node sizes / 使用动态节点尺寸解决重叠"""
+        if not positions:
+            return positions
+
+        max_branches = structure_analysis.get('max_branches', 0)
+        extra_padding = min(0.7, 0.12 + max_branches * 0.06)
+        pad_x = self.node_width * extra_padding
+        pad_y = self.node_height * extra_padding
+
+        node_ids = list(positions.keys())
+        max_iterations = 14
+
+        for _ in range(max_iterations):
+            overlap_found = False
+
+            for i, node_id1 in enumerate(node_ids):
+                for node_id2 in node_ids[i + 1:]:
+                    x1, y1 = positions[node_id1]
+                    x2, y2 = positions[node_id2]
+                    w1, h1 = node_size_map.get(node_id1, (self.node_width, self.node_height))
+                    w2, h2 = node_size_map.get(node_id2, (self.node_width, self.node_height))
+
+                    overlap_x = (w1 + w2) / 2 + pad_x - abs(x1 - x2)
+                    overlap_y = (h1 + h2) / 2 + pad_y - abs(y1 - y2)
+
+                    if overlap_x > 0 and overlap_y > 0:
+                        overlap_found = True
+
+                        sign_x = 1.0 if x2 >= x1 else -1.0
+                        sign_y = 1.0 if y2 >= y1 else -1.0
+
+                        # 主方向布局优先在副轴上分离，减少层内堆叠
+                        prefer_y = layout == "left-right"
+                        move_x = overlap_x / 2 + 0.05
+                        move_y = overlap_y / 2 + 0.05
+
+                        if prefer_y and overlap_y >= overlap_x * 0.7:
+                            positions[node_id1] = (x1, y1 - sign_y * move_y)
+                            positions[node_id2] = (x2, y2 + sign_y * move_y)
+                        elif (not prefer_y) and overlap_x >= overlap_y * 0.7:
+                            positions[node_id1] = (x1 - sign_x * move_x, y1)
+                            positions[node_id2] = (x2 + sign_x * move_x, y2)
+                        elif overlap_x <= overlap_y:
+                            positions[node_id1] = (x1 - sign_x * move_x, y1)
+                            positions[node_id2] = (x2 + sign_x * move_x, y2)
+                        else:
+                            positions[node_id1] = (x1, y1 - sign_y * move_y)
+                            positions[node_id2] = (x2, y2 + sign_y * move_y)
+
+            # 边界修正：按每个节点自身尺寸夹紧
+            for node_id, (x, y) in list(positions.items()):
+                w, h = node_size_map.get(node_id, (self.node_width, self.node_height))
+                half_w = w / 2
+                half_h = h / 2
+                x = max(self.margin_x + half_w, min(canvas_width - self.margin_x - half_w, x))
+                y = max(self.margin_y + half_h, min(canvas_height - self.margin_y - half_h, y))
+                positions[node_id] = (x, y)
+
+            if not overlap_found:
+                break
+
+        return positions
 
     def _calculate_compact_positions(self, nodes: List[Dict], layout: str, canvas_width: float, canvas_height: float) -> Dict[str, Tuple[float, float]]:
         """Legacy compact position calculation (kept for compatibility) / 传统紧凑位置计算（保持兼容性）"""

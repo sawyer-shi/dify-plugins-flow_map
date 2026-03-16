@@ -1,4 +1,4 @@
-version: 0.0.2
+version: 0.0.3
 type: plugin
 tags: 
   - productivity
@@ -38,7 +38,7 @@ plugins:
   tools:
     - provider/flow_map.yaml
 meta:
-  version: 0.0.2
+  version: 0.0.3
   arch:
     - amd64
     - arm64
