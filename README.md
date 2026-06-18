@@ -2,25 +2,26 @@
 
 **Author:** sawyer-shi  
 **Email:** sawyer36@foxmail.com  
-**Version:** 0.0.3  
+**Version:** 0.0.4  
 **Type:** Dify Plugin  
 **Repository:** [GitHub](https://github.com/sawyer-shi/dify-plugins-flow_map)
 
 ### Version Information
 
-- **Current Version**: v0.0.3
-- **Release Date**: 2026-03-15
+- **Current Version**: v0.0.4
+- **Release Date**: 2026-06-17
 - **Compatibility**: Dify Plugin Framework
 - **Python Version**: 3.12+
 
 #### Version History
+- **v0.0.4** (2026-06-17): Added `AI Flowchart` tool with Dify LLM model selection, plain text to Mermaid generation, top-bottom/left-right/free layout selection, and optional Mermaid source download.
 - **v0.0.3** (2026-03-15): Updated element overlap prevention algorithm to ensure elements do not cover each other.
 - **v0.0.2** (2025-10-18): Added free layout flowchart functionality, fixed bugs from previous versions, improved software stability and reliability.
 - **v0.0.1** (2025-09-12): Initial release with smart branch detection, colorful arrow labels, and advanced layout optimization
 
 ## Description
 
-A powerful flowchart generation plugin that converts Markdown and Mermaid syntax to beautiful, intelligent flowcharts with advanced layout optimization and branch-aware positioning.
+A powerful flowchart generation plugin that converts Mermaid syntax or AI-summarized plain text to beautiful, intelligent flowcharts with advanced layout optimization and branch-aware positioning.
 
 ## ✨ Key Features
 
@@ -43,6 +44,12 @@ A powerful flowchart generation plugin that converts Markdown and Mermaid syntax
   - Full Mermaid syntax support with labeled arrows
   - Markdown list conversion
   - Automatic text type detection
+
+- 🤖 **AI Flowchart Generation**
+  - Select any available Dify LLM model directly in the tool
+  - Convert plain text into clean Mermaid flowchart syntax
+  - Choose top-bottom, left-right, or free layout output
+  - Optionally download the AI-generated Mermaid source
   
 - 🎭 **Rich Themes**
   - Modern theme with gradient effects
@@ -51,7 +58,7 @@ A powerful flowchart generation plugin that converts Markdown and Mermaid syntax
   - Custom theme support
   
 - 🔧 **Local Processing**
-  - **Local Generation**: Mind maps generated locally, no API Key required, no external network or services needed
+  - **Local Generation**: Flowcharts generated locally, no API Key required, no external network or services needed
   - **Secure & Reliable**: Data stays private, completely offline processing, protects user privacy
   - No external API dependencies
   - Fast generation with matplotlib
@@ -65,7 +72,13 @@ A powerful flowchart generation plugin that converts Markdown and Mermaid syntax
    - Search and download `flow_map` plugin
    - Enable FlowMap plugin in your workspace
 
-2. **LLM Integration** ⭐
+2. **AI Flowchart** ⭐
+   - Configure an available LLM model in Dify
+   - Select the `ai_flow_map` / `AI Flowchart` tool
+   - Choose the LLM model, paste plain text, and select the output layout
+   - Run the tool to generate a PNG flowchart locally
+
+3. **Manual LLM Integration**
    - Add an LLM node in your Dify workflow
    - Use the simplest prompt: **"Summarize user input #context# into Mermaid flowchart text format"**
    - Connect LLM output to FlowMap plugin input
@@ -83,6 +96,21 @@ A powerful flowchart generation plugin that converts Markdown and Mermaid syntax
 <img width="7667" height="6874" alt="flow_map_en_c_02" src="https://github.com/user-attachments/assets/5ed9b3b4-5ca1-4171-8c5f-f04654c6efd5" />
 
 ## 📚 API Reference
+
+### AI Flowchart Tool
+
+**Input Parameters:**
+- `model_config` (model-selector, required): LLM model selected in Dify
+- `text_content` (string, required): Plain text to summarize into a flowchart
+- `layout_mode` (string, optional): `top_bottom`, `left_right`, or `free`
+- `theme` (string, optional): Theme name (modern/business/classic/tech/minimal)
+- `filename` (string, optional): Base filename for the downloadable Mermaid source
+- `download_mermaid` (boolean, optional): Output the AI-generated Mermaid file
+
+**Output:**
+- Success: PNG image + text summary + JSON details
+- Optional: Mermaid source file when `download_mermaid=true`
+- JSON includes `layout_mode`, `theme`, and `generated_mermaid`
 
 ### Mermaid Left-Right Tool
 
@@ -132,8 +160,10 @@ Available themes with different visual styles:
 ```
 flow_map/
 ├── tools/                  # Core tools implementation
+│   ├── ai_flow_map.py      # AI text-to-flowchart tool
 │   ├── mermaid_lr.py      # Left-right layout tool
 │   ├── mermaid_tb.py      # Top-bottom layout tool
+│   ├── mermaid_free.py    # Free layout tool
 │   └── optimized_layout.py # Advanced layout engine
 ├── provider/              # Provider configurations
 ├── test/                  # Comprehensive tests
@@ -158,22 +188,19 @@ flow_map/
 - **Memory Efficient**: Local processing without external APIs
 - **Fast Rendering**: Optimized for complex flowcharts
 
-## 📄 License
+## Developer Information
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- **Author**: [@sawyer-shi](https://github.com/sawyer-shi)
+- **Email**: sawyer36@foxmail.com 【Currently looking for new job opportunities】
+- **License**: MIT License
+- **Source Code**: https://github.com/sawyer-shi/dify-plugins-flow_map
+- **Support**: Through Dify platform, GitHub Issues, and email
 
-## 🤝 Support
+## License Notice
 
-If you encounter any issues or have questions:
+This project is licensed under the MIT License.
 
-1. 📖 Check the documentation
-2. 🔍 Search existing issues on GitHub
-3. 🆕 Create a new issue with detailed description
-4. 💬 Join our community discussions
-5. 📧 Email: sawyer36@foxmail.com
 
-## 🙏 Acknowledgments
+---
 
-- Matplotlib team for the excellent plotting library
-- Mermaid.js community for inspiration
-- Dify platform for the plugin framework
+**Ready to create beautiful flowcharts?**

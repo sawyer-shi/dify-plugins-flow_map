@@ -10,11 +10,13 @@ This module contains utility functions and tools for the flow map plugin.
 from .mermaid_lr import MermaidLRTool
 from .mermaid_tb import MermaidTBTool
 from .mermaid_free import MermaidFreeTool
+from .ai_flow_map import AIFlowMapTool
 from .free_layout_renderer import ImprovedFlowchartRenderer
 
 __all__ = [
     'MermaidLRTool',
     'MermaidTBTool',
     'MermaidFreeTool',
+    'AIFlowMapTool',
     'ImprovedFlowchartRenderer'
 ]

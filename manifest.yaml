@@ -1,4 +1,4 @@
-version: 0.0.3
+version: 0.0.4
 type: plugin
 tags: 
   - productivity
@@ -11,10 +11,10 @@ label:
   pt_BR: "Gerador de Fluxograma"
   ja_JP: "フローマップジェネレーター"
 description:
-  en_US: Generate flowcharts from Mermaid text locally, supporting left-right, top-bottom, and free layout directions.
-  ja_JP: Mermaid文本からローカルでフローチャートを生成し、左右、上下および自由レイアウト方向をサポート。
-  zh_Hans: 在本地将Mermaid文本转换为流程图，支持左右流向布局、上下流向布局和自由布局。
-  pt_BR: Gere fluxogramas a partir de texto Mermaid localmente, suportando direções de layout esquerda-direita, cima-baixo e livre.
+  en_US: Generate flowcharts from Mermaid text or AI-summarized plain text, supporting left-right, top-bottom, and free layout directions.
+  ja_JP: Mermaid文本またはAIで要約された通常テキストからフローチャートを生成し、左右、上下および自由レイアウト方向をサポート。
+  zh_Hans: 将Mermaid文本或AI总结后的普通文本转换为流程图，支持左右流向布局、上下流向布局和自由布局。
+  pt_BR: Gere fluxogramas a partir de texto Mermaid ou texto comum resumido por IA, suportando direções de layout esquerda-direita, cima-baixo e livre.
 icon: icon.png
 resource:
   memory: 104857600
@@ -38,7 +38,7 @@ plugins:
   tools:
     - provider/flow_map.yaml
 meta:
-  version: 0.0.3
+  version: 0.0.4
   arch:
     - amd64
     - arm64
