@@ -9,12 +9,12 @@
 ### Version Information
 
 - **Current Version**: v0.0.4
-- **Release Date**: 2026-06-17
+- **Release Date**: 2026-06-21
 - **Compatibility**: Dify Plugin Framework
 - **Python Version**: 3.12+
 
 #### Version History
-- **v0.0.4** (2026-06-17): Added `AI Flowchart` tool with Dify LLM model selection, plain text to Mermaid generation, top-bottom/left-right/free layout selection, and optional Mermaid source download.
+- **v0.0.4** (2026-06-21): Added `AI Flowchart` tool with Dify LLM model selection, plain text to Mermaid generation, top-bottom/left-right/free layout selection, and optional Mermaid source download.
 - **v0.0.3** (2026-03-15): Updated element overlap prevention algorithm to ensure elements do not cover each other.
 - **v0.0.2** (2025-10-18): Added free layout flowchart functionality, fixed bugs from previous versions, improved software stability and reliability.
 - **v0.0.1** (2025-09-12): Initial release with smart branch detection, colorful arrow labels, and advanced layout optimization
