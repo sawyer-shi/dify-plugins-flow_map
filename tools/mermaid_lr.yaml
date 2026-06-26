@@ -4,14 +4,10 @@ identity:
   label:
     en_US: "Flowchart → Left-Right Layout"
     zh_Hans: "流程图 → 左右布局"
-    pt_BR: "Fluxograma → Layout Esquerda-Direita"
-    ja_JP: "フローチャート → 左右レイアウト"
 description:
   human:
     en_US: "Enter Mermaid flowchart syntax (graph TD/LR) text information to generate horizontal layout visualization flowchart."
     zh_Hans: "输入Mermaid流程图语法（graph TD/LR）文本信息，生成水平布局可视化流程图。"
-    pt_BR: "Insira informações de texto da sintaxe do fluxograma Mermaid (graph TD/LR) para gerar fluxograma de visualização de layout horizontal."
-    ja_JP: "Mermaidフローチャート構文（graph TD/LR）テキスト情報を入力して、水平レイアウトの可視化フローチャートを生成。"
   llm: "Generate horizontal (left-to-right) flowcharts from Mermaid graph syntax. Great for complex workflows with branches and loops."
 parameters:
   - name: text
@@ -20,13 +16,9 @@ parameters:
     label:
       en_US: Mermaid Syntax
       zh_Hans: Mermaid语法
-      pt_BR: Sintaxe Mermaid
-      ja_JP: Mermaid構文
     human_description:
       en_US: "Enter Mermaid flowchart syntax (graph TD/LR) text information to generate horizontal layout visualization flowchart"
       zh_Hans: "输入Mermaid流程图语法（graph TD/LR）文本信息，生成水平布局可视化流程图"
-      pt_BR: "Insira informações de texto da sintaxe do fluxograma Mermaid (graph TD/LR) para gerar fluxograma de visualização de layout horizontal"
-      ja_JP: "Mermaidフローチャート構文（graph TD/LR）テキスト情報を入力して、水平レイアウトの可視化フローチャートを生成"
     llm_description: "Mermaid flowchart syntax that will be rendered in horizontal left-to-right layout regardless of graph direction"
     form: llm
   - name: theme
@@ -36,13 +28,9 @@ parameters:
     label:
       en_US: Visual Theme
       zh_Hans: 视觉主题
-      pt_BR: Tema Visual
-      ja_JP: ビジュアルテーマ
     human_description:
       en_US: "Choose the visual theme for the flowchart. Different themes provide different color schemes and styling."
       zh_Hans: "选择流程图的视觉主题。不同主题提供不同的配色方案和样式。"
-      pt_BR: "Escolha o tema visual para o fluxograma. Diferentes temas fornecem esquemas de cores e estilos diferentes."
-      ja_JP: "フローチャートのビジュアルテーマを選択してください。異なるテーマは異なる配色とスタイルを提供します。"
     llm_description: "Visual theme selection for the flowchart appearance and color scheme"
     form: form
     options:
@@ -50,32 +38,22 @@ parameters:
         label:
           en_US: Modern (Default)
           zh_Hans: 现代风格（默认）
-          pt_BR: Moderno (Padrão)
-          ja_JP: モダン（デフォルト）
       - value: classic
         label:
           en_US: Classic
           zh_Hans: 经典风格
-          pt_BR: Clássico
-          ja_JP: クラシック
       - value: business
         label:
           en_US: Business
           zh_Hans: 商务风格
-          pt_BR: Negócios
-          ja_JP: ビジネス
       - value: tech
         label:
           en_US: Technology
           zh_Hans: 科技风格
-          pt_BR: Tecnologia
-          ja_JP: テクノロジー
       - value: minimal
         label:
           en_US: Minimal
           zh_Hans: 简约风格
-          pt_BR: Minimalista
-          ja_JP: ミニマル
 extra:
   python:
     source: tools/mermaid_lr.py

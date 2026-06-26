@@ -4,14 +4,10 @@ identity:
   label:
     en_US: "Flowchart - Free Layout"
     zh_Hans: "流程图 - 自由布局"
-    pt_BR: "Fluxograma → Layout Livre"
-    ja_JP: "フローチャート → フリーレイアウト"
 description:
   human:
     en_US: "Enter Mermaid flowchart syntax (graph TD/LR) text information to generate free layout visualization flowchart."
     zh_Hans: "输入Mermaid流程图语法（graph TD/LR）文本信息，生成自由布局可视化流程图。"
-    pt_BR: "Insira informações de texto da sintaxe do fluxograma Mermaid (graph TD/LR) para gerar fluxograma de visualização de layout livre."
-    ja_JP: "Mermaidフローチャート構文（graph TD/LR）テキスト情報を入力して、自由レイアウトの可視化フローチャートを生成。"
   llm: "Generate free layout flowcharts from Mermaid flowchart syntax (graph TD/LR) with optimized layout. Supports flowcharts with classic styling."
 parameters:
   - name: text
@@ -20,13 +16,9 @@ parameters:
     label:
       en_US: Mermaid Syntax
       zh_Hans: Mermaid语法
-      pt_BR: Sintaxe Mermaid
-      ja_JP: Mermaid構文
     human_description:
       en_US: "Enter Mermaid flowchart syntax (graph TD/LR) text information to generate free layout visualization flowchart"
       zh_Hans: "输入Mermaid流程图语法（graph TD/LR）文本信息，生成自由布局可视化流程图"
-      pt_BR: "Insira informações de texto da sintaxe do fluxograma Mermaid (graph TD/LR) para gerar fluxograma de visualização de layout livre"
-      ja_JP: "Mermaidフローチャート構文（graph TD/LR）テキスト情報を入力して、自由レイアウトの可視化フローチャートを生成"
     llm_description: "Mermaid flowchart syntax (graph TD/LR) that will be rendered as flowcharts with optimized free layout"
     form: llm
 extra:

@@ -1,4 +1,4 @@
-dify_plugin>=0.2.0
+dify_plugin>=0.9.0
 
 # Flow chart generation dependencies / 流程图生成依赖
 pyflowchart>=0.3.1

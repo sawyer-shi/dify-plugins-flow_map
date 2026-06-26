@@ -67,6 +67,8 @@ class ImprovedFlowchartLayout:
                 adjacency[from_node].append(to_node)
                 in_degree[to_node] += 1
         
+        complexity = self._analyze_graph_complexity(nodes, edges, adjacency, in_degree)
+        
         # 拓扑排序，确定节点的层级
         levels = self._topological_sort_levels(nodes, in_degree, adjacency)
         
@@ -75,12 +77,50 @@ class ImprovedFlowchartLayout:
         self.node_rectangles = {}
         
         # 计算节点位置，确保节点不重叠
-        positions, canvas_width, canvas_height = self._calculate_non_overlapping_positions(levels, is_chinese, adjacency, node_map)
+        positions, canvas_width, canvas_height = self._calculate_non_overlapping_positions(
+            levels, is_chinese, adjacency, node_map, complexity["spacing_scale"]
+        )
         
         return {
             "positions": positions,
             "canvas_width": canvas_width,
-            "canvas_height": canvas_height
+            "canvas_height": canvas_height,
+            "routing_mode": "complex_orthogonal" if complexity["is_complex"] else "standard",
+            "complexity_score": complexity["score"],
+            "effective_horizontal_spacing": int(self.min_horizontal_spacing * complexity["spacing_scale"]),
+            "effective_vertical_spacing": int(self.min_vertical_spacing * complexity["spacing_scale"]),
+        }
+    
+    def _analyze_graph_complexity(self, nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]],
+                                  adjacency: Dict[str, List[str]], in_degree: Dict[str, int]) -> Dict[str, Any]:
+        """
+        评估流程图复杂度，用于自动拉开节点间距并启用复杂连线路由。
+        """
+        node_count = len(nodes)
+        edge_count = len(edges)
+        branch_count = sum(1 for targets in adjacency.values() if len(targets) > 1)
+        merge_count = sum(1 for degree in in_degree.values() if degree > 1)
+        density = edge_count / max(node_count, 1)
+        
+        score = 0.0
+        if node_count > 12:
+            score += (node_count - 12) / 8
+        if edge_count > 16:
+            score += (edge_count - 16) / 10
+        score += branch_count * 0.25
+        score += merge_count * 0.2
+        if density > 1.15:
+            score += (density - 1.15) * 1.5
+        
+        is_complex = node_count > 12 or edge_count > 16 or branch_count >= 4 or merge_count >= 3 or score >= 1.0
+        spacing_scale = 1.0
+        if is_complex:
+            spacing_scale = min(2.0, 1.25 + min(score, 3.0) * 0.18)
+        
+        return {
+            "is_complex": is_complex,
+            "score": round(score, 2),
+            "spacing_scale": spacing_scale,
         }
     
     def _topological_sort_levels(self, nodes: List[Dict[str, Any]], 
@@ -154,7 +194,8 @@ class ImprovedFlowchartLayout:
     def _calculate_non_overlapping_positions(self, levels: List[List[str]], 
                                            is_chinese: bool, 
                                            adjacency: Dict[str, List[str]],
-                                           node_map: Dict[str, Dict[str, Any]]) -> Tuple[Dict[str, Tuple[int, int]], int, int]:
+                                           node_map: Dict[str, Dict[str, Any]],
+                                           spacing_scale: float = 1.0) -> Tuple[Dict[str, Tuple[int, int]], int, int]:
         """
         计算节点的位置，确保节点不重叠
         
@@ -168,13 +209,17 @@ class ImprovedFlowchartLayout:
             元组，包含节点位置字典、画布宽度和画布高度
         """
         positions = {}
+        horizontal_spacing = int(self.min_horizontal_spacing * spacing_scale)
+        vertical_spacing = int(self.min_vertical_spacing * spacing_scale)
+        diamond_horizontal_spacing = int(self.diamond_horizontal_spacing * spacing_scale)
+        diamond_vertical_spacing = int(self.diamond_vertical_spacing * spacing_scale)
         
         # 计算画布的初始大小
         max_level_width = max(len(level) for level in levels) if levels else 0
         
         # 初始画布大小计算
-        initial_canvas_width = max_level_width * self.min_horizontal_spacing + 2 * self.margin
-        initial_canvas_height = len(levels) * self.min_vertical_spacing + 2 * self.margin
+        initial_canvas_width = max_level_width * horizontal_spacing + 2 * self.margin
+        initial_canvas_height = len(levels) * vertical_spacing + 2 * self.margin
         
         # 设置最小画布尺寸，确保不会太小
         min_canvas_width = 800
@@ -185,11 +230,11 @@ class ImprovedFlowchartLayout:
         
         # 为每个层级计算节点位置
         for level_idx, level in enumerate(levels):
-            level_y = self.margin + level_idx * self.min_vertical_spacing
+            level_y = self.margin + level_idx * vertical_spacing
             
             # 计算该层节点的起始x坐标，使节点居中
-            level_width = len(level) * self.min_horizontal_spacing
-            start_x = (canvas_width - level_width) / 2 + self.min_horizontal_spacing / 2
+            level_width = len(level) * horizontal_spacing
+            start_x = (canvas_width - level_width) / 2 + horizontal_spacing / 2
             
             # 为该层每个节点计算位置
             for node_idx, node_id in enumerate(level):
@@ -202,25 +247,26 @@ class ImprovedFlowchartLayout:
                     # 菱形节点需要更大的空间
                     if is_chinese:
                         # 中文布局：从右到左
-                        node_x = canvas_width - start_x - node_idx * self.diamond_horizontal_spacing
+                        node_x = canvas_width - start_x - node_idx * diamond_horizontal_spacing
                     else:
                         # 英文布局：从左到右
-                        node_x = start_x + node_idx * self.diamond_horizontal_spacing
+                        node_x = start_x + node_idx * diamond_horizontal_spacing
                 else:
                     # 普通节点
                     if is_chinese:
                         # 中文布局：从右到左
-                        node_x = canvas_width - start_x - node_idx * self.min_horizontal_spacing
+                        node_x = canvas_width - start_x - node_idx * horizontal_spacing
                     else:
                         # 英文布局：从左到右
-                        node_x = start_x + node_idx * self.min_horizontal_spacing
+                        node_x = start_x + node_idx * horizontal_spacing
                 
                 # 先记录节点的矩形区域，以便后续节点可以检查重叠
                 self._record_node_rectangle(node_id, node_x, level_y, node_shape)
                 
                 # 检查并调整位置，确保不与已有节点重叠
                 adjusted_x, adjusted_y = self._find_non_overlapping_position(
-                    node_id, node_x, level_y, is_chinese, canvas_width, node_shape
+                    node_id, node_x, level_y, is_chinese, canvas_width, node_shape,
+                    horizontal_spacing, vertical_spacing, diamond_horizontal_spacing, diamond_vertical_spacing
                 )
                 
                 positions[node_id] = (int(adjusted_x), int(adjusted_y))
@@ -275,7 +321,11 @@ class ImprovedFlowchartLayout:
         return adjusted_width, adjusted_height
     
     def _find_non_overlapping_position(self, node_id: str, initial_x: float, initial_y: float, 
-                                     is_chinese: bool, canvas_width: float, node_shape: str = "rectangle") -> Tuple[float, float]:
+                                     is_chinese: bool, canvas_width: float, node_shape: str = "rectangle",
+                                     effective_horizontal_spacing: float = None,
+                                     effective_vertical_spacing: float = None,
+                                     effective_diamond_horizontal_spacing: float = None,
+                                     effective_diamond_vertical_spacing: float = None) -> Tuple[float, float]:
         """
         找到一个不与已有节点重叠的位置
         
@@ -295,11 +345,11 @@ class ImprovedFlowchartLayout:
         
         # 根据节点形状设置间距
         if node_shape == "diamond":
-            horizontal_spacing = self.diamond_horizontal_spacing
-            vertical_spacing = self.diamond_vertical_spacing
+            horizontal_spacing = effective_diamond_horizontal_spacing or self.diamond_horizontal_spacing
+            vertical_spacing = effective_diamond_vertical_spacing or self.diamond_vertical_spacing
         else:
-            horizontal_spacing = self.min_horizontal_spacing
-            vertical_spacing = self.min_vertical_spacing
+            horizontal_spacing = effective_horizontal_spacing or self.min_horizontal_spacing
+            vertical_spacing = effective_vertical_spacing or self.min_vertical_spacing
         
         # 检查是否与已有节点重叠
         max_attempts = 50  # 最大尝试次数

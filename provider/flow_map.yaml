@@ -4,15 +4,12 @@ identity:
   label:
     en_US: "Flow Chart Generator"
     zh_Hans: "流程图"
-    pt_BR: "Gerador de Fluxograma"
-    ja_JP: "フローマップジェネレーター"
   description:
-    en_US: "Generate flowcharts from Mermaid text locally, supporting left-right, top-bottom, and free layout directions."
-    zh_Hans: "在本地将Mermaid文本转换为流程图，支持左右流向布局、上下流向布局和自由布局。"
-    pt_BR: "Gere fluxogramas a partir de texto Mermaid localmente, suportando direções de layout esquerda-direita, cima-baixo e livre."
-    ja_JP: "Mermaid文本からローカルでフローチャートを生成し、左右、上下および自由レイアウト方向をサポート。"
+    en_US: "Local Private Flowchart Generator: Generate beautiful flowcharts from Mermaid syntax or AI-summarized plain text with left-right, top-bottom and free layouts."
+    zh_Hans: "本地私有流程图生成器：将Mermaid文本或AI总结后的文本转换为精美流程图，支持左右结构、上下结构、自由结构布局"
   icon: "icon.png"
 tools:
+  - tools/ai_flow_map.yaml
   - tools/mermaid_lr.yaml
   - tools/mermaid_tb.yaml
   - tools/mermaid_free.yaml
