@@ -193,7 +193,7 @@ flow_map/
 ## Developer Information
 
 - **Author**: [@sawyer-shi](https://github.com/sawyer-shi)
-- **Email**: sawyer36@foxmail.com 【Currently looking for new job opportunities】
+- **Email**: sawyer36@foxmail.com
 - **License**: MIT License
 - **Source Code**: https://github.com/sawyer-shi/dify-plugins-flow_map
 - **Support**: Through Dify platform, GitHub Issues, and email
