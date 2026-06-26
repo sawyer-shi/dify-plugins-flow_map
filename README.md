@@ -140,6 +140,7 @@ The plugin automatically detects branching scenarios in your flowchart and switc
 
 - **Linear Flow**: Uses grid layout for optimal alignment
 - **Branching Flow**: Uses free layout to prevent overlap
+- **Complex Flow**: Automatically expands spacing and uses Bezier curve routing with orthogonal fallback to reduce line interference in dense free-layout diagrams
 
 ### Colorful Arrow Labels
 
@@ -181,6 +182,7 @@ flow_map/
 - **Free Layout**: Hierarchical positioning based on connection levels
 - **Canvas Adaptation**: Dynamic canvas sizing (up to 2.5x node count)
 - **Collision Avoidance**: Smart spacing with 70% effective area usage
+- **Complex Routing**: Dense free-layout flowcharts use Bezier curve fan-out, per-edge channel offsets, orthogonal fallback, canvas-bounded routing, and label collision avoidance
 
 ### Performance Optimization
 

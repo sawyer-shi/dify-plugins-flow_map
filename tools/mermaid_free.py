@@ -60,7 +60,7 @@ class MermaidFreeTool(Tool):
             positions = layout_result.get("positions", {})
             
             # 生成图像 - 使用默认风格
-            image_path = self._generate_image(chart_type, elements, positions, is_chinese)
+            image_path = self._generate_image(chart_type, elements, positions, is_chinese, layout_result)
             
             # 读取生成的PNG文件并返回为blob
             with open(image_path, "rb") as f:
@@ -141,13 +141,14 @@ class MermaidFreeTool(Tool):
         return node_str.split('[')[0].split('(')[0].strip()
     
     def _generate_image(self, chart_type: str, elements: List[Dict[str, Any]], 
-                       positions: Dict[str, Tuple[int, int]], is_chinese: bool) -> str:
+                       positions: Dict[str, Tuple[int, int]], is_chinese: bool,
+                       source_layout_result: Dict[str, Any] = None) -> str:
         """
         生成图像并返回文件路径
         """
         # 使用布局管理器的render方法生成图像
         # 首先转换positions为布局管理器期望的格式
-        layout_result = self._convert_positions_to_layout_result(elements, positions)
+        layout_result = self._convert_positions_to_layout_result(elements, positions, source_layout_result)
         
         # 直接使用渲染器渲染图像
         image = self.layout_manager.flowchart_renderer.render_mermaid("", layout_result)
@@ -166,7 +167,8 @@ class MermaidFreeTool(Tool):
         return output_path
     
     def _convert_positions_to_layout_result(self, elements: List[Dict[str, Any]], 
-                                          positions: Dict[str, Tuple[int, int]]) -> Dict[str, Any]:
+                                          positions: Dict[str, Tuple[int, int]],
+                                          source_layout_result: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         将元素列表和位置字典转换为布局结果格式
         """
@@ -233,12 +235,22 @@ class MermaidFreeTool(Tool):
         canvas_width = max(max_x + node_width // 2 + margin, 800)  # 最小宽度800
         canvas_height = max(max_y + node_height // 2 + margin, 600)  # 最小高度600
         
-        return {
+        result = {
             'nodes': nodes,
             'connections': connections,
             'canvas_width': canvas_width,
             'canvas_height': canvas_height
         }
+        if source_layout_result:
+            for key in (
+                'routing_mode',
+                'complexity_score',
+                'effective_horizontal_spacing',
+                'effective_vertical_spacing',
+            ):
+                if key in source_layout_result:
+                    result[key] = source_layout_result[key]
+        return result
     
     def _generate_mermaid_code(self, elements: List[Dict[str, Any]]) -> str:
         """

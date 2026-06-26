@@ -40,6 +40,9 @@ class ImprovedFlowchartRenderer:
         # 节点尺寸配置
         self.node_width = 140
         self.node_height = 60
+        self.route_channel_gap = 18
+        self.curve_sample_count = 24
+        self._reset_route_state()
         
         # 字体配置 - 支持中文，优先使用插件内嵌字体
         self.font_size = 12
@@ -118,11 +121,20 @@ class ImprovedFlowchartRenderer:
         # 获取节点和连接信息
         nodes = layout_result.get('nodes', {})
         connections = layout_result.get('connections', [])
+        self._reset_route_state(
+            layout_result.get('routing_mode') == 'complex_orthogonal',
+            route_bounds=(8, 8, canvas_width - 8, canvas_height - 8)
+        )
+        rendered_nodes = {}
         
         # 绘制节点
         for node_id, node_data in nodes.items():
             # 调整位置，添加边距和描述信息空间
             pos = (node_data['x'] + margin, node_data['y'] + margin + extra_margin)
+            rendered_node = dict(node_data)
+            rendered_node['x'] = pos[0]
+            rendered_node['y'] = pos[1]
+            rendered_nodes[node_id] = rendered_node
             self._draw_node(draw, node_id, node_data, pos)
         
         # 绘制连接线（使用改进的算法，确保不穿过节点）
@@ -132,18 +144,37 @@ class ImprovedFlowchartRenderer:
             line_type = connection.get('line_type', 'solid')
             label = connection.get('label', None)
             
-            from_pos = (nodes[from_node]['x'] + margin, nodes[from_node]['y'] + margin + extra_margin)
-            to_pos = (nodes[to_node]['x'] + margin, nodes[to_node]['y'] + margin + extra_margin)
+            from_pos = (rendered_nodes[from_node]['x'], rendered_nodes[from_node]['y'])
+            to_pos = (rendered_nodes[to_node]['x'], rendered_nodes[to_node]['y'])
             
             # 使用改进的连线算法，确保不穿过节点
             self._draw_smart_arrow_line(
                 draw, from_pos, to_pos, 
-                nodes[from_node].get('shape', 'rectangle'),
-                nodes[to_node].get('shape', 'rectangle'),
-                line_type, label, nodes, from_node, to_node
+                rendered_nodes[from_node].get('shape', 'rectangle'),
+                rendered_nodes[to_node].get('shape', 'rectangle'),
+                line_type, label, rendered_nodes, from_node, to_node
             )
         
         return image
+    
+    def _reset_route_state(self, complex_routing_enabled: bool = False, route_bounds: Tuple[int, int, int, int] = None):
+        """重置单次渲染中的连线路由状态。"""
+        self._complex_routing_enabled = complex_routing_enabled
+        self._route_channel_counts = {}
+        self._label_rectangles = []
+        self._route_bounds = route_bounds
+    
+    def _reserve_route_channel(self, from_node_id: str, to_node_id: str) -> int:
+        """为同一对节点的连线分配稳定的错位通道。"""
+        key = tuple(sorted([str(from_node_id), str(to_node_id)]))
+        count = self._route_channel_counts.get(key, 0)
+        self._route_channel_counts[key] = count + 1
+        
+        if count == 0:
+            return 0
+        direction = 1 if count % 2 == 1 else -1
+        magnitude = (count + 1) // 2
+        return direction * magnitude * self.route_channel_gap
     
     def _draw_node(self, draw: ImageDraw.ImageDraw, node_id: str, node_data: Dict[str, Any], pos: Tuple[int, int]):
         """
@@ -582,6 +613,18 @@ class ImprovedFlowchartRenderer:
         # 计算节点边缘的位置（避免箭头被节点遮挡）
         from_adjusted_pos = self._calculate_node_edge_point(from_pos, to_pos, from_shape)
         to_adjusted_pos = self._calculate_node_edge_point(to_pos, from_pos, to_shape)
+        if getattr(self, "_complex_routing_enabled", False):
+            path_points = self._find_complex_curve_path(
+                from_adjusted_pos, to_adjusted_pos, nodes, from_pos, to_pos, from_node_id, to_node_id
+            )
+            self._draw_path_with_arrow(draw, path_points, line_type)
+            if label and len(path_points) >= 2:
+                label_segment_index = self._select_label_segment_index(path_points)
+                self._draw_edge_label(
+                    draw, path_points[label_segment_index], path_points[label_segment_index + 1],
+                    label, from_node_id, to_node_id
+                )
+            return
         
         # 尝试直接连接
         if not self._line_intersects_nodes(from_adjusted_pos, to_adjusted_pos, nodes, from_pos, to_pos):
@@ -607,6 +650,196 @@ class ImprovedFlowchartRenderer:
             else:
                 # 如果只有两个点，使用这两个点
                 self._draw_edge_label(draw, path_points[0], path_points[1], label, from_node_id, to_node_id)
+    
+    def _draw_path_with_arrow(self, draw: ImageDraw.ImageDraw, path_points: List[Tuple[int, int]], line_type="solid"):
+        for i in range(len(path_points) - 1):
+            self._draw_arrow_line_by_type(
+                draw, path_points[i], path_points[i + 1], line_type,
+                is_last_segment=(i == len(path_points) - 2)
+            )
+    
+    def _select_label_segment_index(self, path_points: List[Tuple[int, int]]) -> int:
+        if len(path_points) <= 2:
+            return 0
+        return max(0, min(len(path_points) - 2, len(path_points) // 2 - 1))
+    
+    def _find_complex_curve_path(self, from_pos: Tuple[int, int], to_pos: Tuple[int, int],
+                                 nodes: Dict[str, Any], from_node_pos: Tuple[int, int],
+                                 to_node_pos: Tuple[int, int], from_node_id: str,
+                                 to_node_id: str) -> List[Tuple[int, int]]:
+        """复杂自由结构优先使用贝塞尔曲线分流，碰到节点时回退到正交路由。"""
+        channel_offset = self._reserve_route_channel(from_node_id, to_node_id)
+        curve_path = self._build_bezier_curve_path(from_pos, to_pos, channel_offset)
+        boundaries = self._build_node_boundaries(nodes, from_node_pos, to_node_pos, padding=12)
+        if self._path_within_route_bounds(curve_path) and not self._path_intersects_boundaries(curve_path, boundaries):
+            return curve_path
+        
+        fallback = self._find_complex_orthogonal_path_with_offset(
+            from_pos, to_pos, nodes, from_node_pos, to_node_pos, channel_offset
+        )
+        if self._path_within_route_bounds(fallback):
+            return fallback
+        return self._clamp_path_to_route_bounds(fallback)
+    
+    def _build_bezier_curve_path(self, from_pos: Tuple[int, int], to_pos: Tuple[int, int],
+                                 channel_offset: int) -> List[Tuple[int, int]]:
+        x1, y1 = from_pos
+        x2, y2 = to_pos
+        dx = x2 - x1
+        dy = y2 - y1
+        distance = max(1.0, math.sqrt(dx ** 2 + dy ** 2))
+        unit_x = dx / distance
+        unit_y = dy / distance
+        perp_x = -unit_y
+        perp_y = unit_x
+        
+        base_curve = min(120, max(35, distance * 0.22))
+        bend = base_curve + abs(channel_offset) * 1.1
+        direction = 1 if channel_offset >= 0 else -1
+        
+        control1 = (
+            x1 + dx * 0.33 + perp_x * bend * direction,
+            y1 + dy * 0.33 + perp_y * bend * direction,
+        )
+        control2 = (
+            x1 + dx * 0.67 + perp_x * bend * direction,
+            y1 + dy * 0.67 + perp_y * bend * direction,
+        )
+        
+        points = []
+        for index in range(self.curve_sample_count + 1):
+            t = index / self.curve_sample_count
+            point = self._cubic_bezier_point(from_pos, control1, control2, to_pos, t)
+            int_point = (int(round(point[0])), int(round(point[1])))
+            if not points or points[-1] != int_point:
+                points.append(int_point)
+        return points
+    
+    def _cubic_bezier_point(self, p0, p1, p2, p3, t: float) -> Tuple[float, float]:
+        inv = 1 - t
+        x = (
+            inv ** 3 * p0[0] +
+            3 * inv ** 2 * t * p1[0] +
+            3 * inv * t ** 2 * p2[0] +
+            t ** 3 * p3[0]
+        )
+        y = (
+            inv ** 3 * p0[1] +
+            3 * inv ** 2 * t * p1[1] +
+            3 * inv * t ** 2 * p2[1] +
+            t ** 3 * p3[1]
+        )
+        return x, y
+    
+    def _find_complex_orthogonal_path_with_offset(self, from_pos: Tuple[int, int], to_pos: Tuple[int, int],
+                                                  nodes: Dict[str, Any], from_node_pos: Tuple[int, int],
+                                                  to_node_pos: Tuple[int, int],
+                                                  channel_offset: int) -> List[Tuple[int, int]]:
+        dx = to_pos[0] - from_pos[0]
+        dy = to_pos[1] - from_pos[1]
+        candidates = []
+        
+        if abs(dx) >= abs(dy):
+            mid_x = (from_pos[0] + to_pos[0]) // 2 + channel_offset
+            candidates.append([from_pos, (mid_x, from_pos[1]), (mid_x, to_pos[1]), to_pos])
+            candidates.append([from_pos, (from_pos[0], from_pos[1] + channel_offset), (to_pos[0], from_pos[1] + channel_offset), to_pos])
+        else:
+            mid_y = (from_pos[1] + to_pos[1]) // 2 + channel_offset
+            candidates.append([from_pos, (from_pos[0], mid_y), (to_pos[0], mid_y), to_pos])
+            candidates.append([from_pos, (from_pos[0] + channel_offset, from_pos[1]), (from_pos[0] + channel_offset, to_pos[1]), to_pos])
+        
+        detour = max(self.node_width, self.node_height) + abs(channel_offset) + 40
+        candidates.extend([
+            [from_pos, (from_pos[0], from_pos[1] - detour), (to_pos[0], from_pos[1] - detour), to_pos],
+            [from_pos, (from_pos[0], from_pos[1] + detour), (to_pos[0], from_pos[1] + detour), to_pos],
+            [from_pos, (from_pos[0] - detour, from_pos[1]), (from_pos[0] - detour, to_pos[1]), to_pos],
+            [from_pos, (from_pos[0] + detour, from_pos[1]), (from_pos[0] + detour, to_pos[1]), to_pos],
+        ])
+        
+        node_boundaries = self._build_node_boundaries(nodes, from_node_pos, to_node_pos, padding=12)
+        valid_candidates = [
+            candidate for candidate in candidates
+            if self._path_within_route_bounds(candidate) and not self._path_intersects_boundaries(candidate, node_boundaries)
+        ]
+        if valid_candidates:
+            return min(valid_candidates, key=self._path_score)
+        fallback = self._find_path_around_nodes(from_pos, to_pos, nodes, from_node_pos, to_node_pos)
+        if fallback and self._path_within_route_bounds(fallback):
+            return fallback
+        direct = [from_pos, to_pos]
+        return direct if self._path_within_route_bounds(direct) else self._clamp_path_to_route_bounds(direct)
+    
+    def _find_complex_orthogonal_path(self, from_pos: Tuple[int, int], to_pos: Tuple[int, int],
+                                      nodes: Dict[str, Any], from_node_pos: Tuple[int, int],
+                                      to_node_pos: Tuple[int, int], from_node_id: str,
+                                      to_node_id: str) -> List[Tuple[int, int]]:
+        """复杂图使用正交折线和通道偏移，减少线条互相覆盖。"""
+        channel_offset = self._reserve_route_channel(from_node_id, to_node_id)
+        return self._find_complex_orthogonal_path_with_offset(
+            from_pos, to_pos, nodes, from_node_pos, to_node_pos, channel_offset
+        )
+    
+    def _build_node_boundaries(self, nodes: Dict[str, Any], from_node_pos: Tuple[int, int],
+                               to_node_pos: Tuple[int, int], padding: int = 5) -> List[Dict]:
+        boundaries = []
+        if not nodes:
+            return boundaries
+        for node_data in nodes.values():
+            node_center = (node_data['x'], node_data['y'])
+            if node_center == from_node_pos or node_center == to_node_pos:
+                continue
+            node_shape = node_data.get('shape', 'rectangle')
+            if node_shape == 'circle':
+                boundaries.append({
+                    'type': 'circle',
+                    'center': node_center,
+                    'radius': min(self.node_width, self.node_height) // 2 + padding
+                })
+            elif node_shape == 'diamond':
+                boundaries.append({
+                    'type': 'diamond',
+                    'center': node_center,
+                    'half_width': self.node_width // 2 + padding,
+                    'half_height': self.node_height // 2 + padding
+                })
+            else:
+                boundaries.append({
+                    'type': 'rectangle',
+                    'center': node_center,
+                    'half_width': self.node_width // 2 + padding,
+                    'half_height': self.node_height // 2 + padding
+                })
+        return boundaries
+    
+    def _path_intersects_boundaries(self, path_points: List[Tuple[int, int]], boundaries: List[Dict]) -> bool:
+        for index in range(len(path_points) - 1):
+            if self._line_intersects_boundaries(path_points[index], path_points[index + 1], boundaries):
+                return True
+        return False
+    
+    def _path_within_route_bounds(self, path_points: List[Tuple[int, int]]) -> bool:
+        if not getattr(self, "_route_bounds", None):
+            return True
+        left, top, right, bottom = self._route_bounds
+        return all(left <= point[0] <= right and top <= point[1] <= bottom for point in path_points)
+    
+    def _clamp_path_to_route_bounds(self, path_points: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+        if not getattr(self, "_route_bounds", None):
+            return path_points
+        left, top, right, bottom = self._route_bounds
+        clamped = []
+        for x, y in path_points:
+            clamped.append((int(min(max(x, left), right)), int(min(max(y, top), bottom))))
+        return clamped
+    
+    def _path_score(self, path_points: List[Tuple[int, int]]) -> float:
+        length = 0.0
+        turns = max(0, len(path_points) - 2)
+        for index in range(len(path_points) - 1):
+            p1 = path_points[index]
+            p2 = path_points[index + 1]
+            length += math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
+        return length + turns * 35
     
     def _draw_arrow_line_by_type(self, draw: ImageDraw.ImageDraw, from_pos: Tuple[int, int], to_pos: Tuple[int, int],
                                 line_type="solid", is_last_segment=True):
@@ -1250,6 +1483,9 @@ class ImprovedFlowchartRenderer:
         bg_y1 = mid_y - text_height // 2 - padding
         bg_x2 = mid_x + text_width // 2 + padding
         bg_y2 = mid_y + text_height // 2 + padding
+        bg_x1, bg_y1, bg_x2, bg_y2 = self._place_label_without_overlap((bg_x1, bg_y1, bg_x2, bg_y2))
+        mid_x = (bg_x1 + bg_x2) // 2
+        mid_y = (bg_y1 + bg_y2) // 2
         
         # 绘制阴影
         shadow_offset = 2
@@ -1469,6 +1705,9 @@ class ImprovedFlowchartRenderer:
         bg_y1 = label_y - text_height // 2 - padding
         bg_x2 = label_x + text_width // 2 + padding
         bg_y2 = label_y + text_height // 2 + padding
+        bg_x1, bg_y1, bg_x2, bg_y2 = self._place_label_without_overlap((bg_x1, bg_y1, bg_x2, bg_y2))
+        label_x = (bg_x1 + bg_x2) / 2
+        label_y = (bg_y1 + bg_y2) / 2
         
         # 绘制阴影
         shadow_offset = 2
@@ -1487,6 +1726,38 @@ class ImprovedFlowchartRenderer:
         else:
             draw.text((text_x, text_y), label, fill=self.colors['text'])
             # print("Drew edge label without font")
+
+    def _place_label_without_overlap(self, rect: Tuple[float, float, float, float]) -> Tuple[float, float, float, float]:
+        """为边标签寻找一个不与已有标签重叠的位置。"""
+        if not getattr(self, "_label_rectangles", None):
+            self._label_rectangles = []
+        
+        x1, y1, x2, y2 = rect
+        offsets = [
+            (0, 0), (0, -22), (0, 22), (28, 0), (-28, 0),
+            (28, -22), (-28, -22), (28, 22), (-28, 22),
+            (0, -44), (0, 44),
+        ]
+        for dx, dy in offsets:
+            candidate = (x1 + dx, y1 + dy, x2 + dx, y2 + dy)
+            if not any(self._rectangles_overlap_simple(candidate, used, margin=4) for used in self._label_rectangles):
+                self._label_rectangles.append(candidate)
+                return candidate
+        
+        self._label_rectangles.append(rect)
+        return rect
+    
+    def _rectangles_overlap_simple(self, rect1: Tuple[float, float, float, float],
+                                   rect2: Tuple[float, float, float, float],
+                                   margin: int = 0) -> bool:
+        left1, top1, right1, bottom1 = rect1
+        left2, top2, right2, bottom2 = rect2
+        return not (
+            right1 + margin < left2 or
+            right2 + margin < left1 or
+            bottom1 + margin < top2 or
+            bottom2 + margin < top1
+        )
 
 
 
