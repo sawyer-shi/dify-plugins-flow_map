@@ -193,14 +193,14 @@ flow_map/
 ## Developer Information
 
 - **Author**: [@sawyer-shi](https://github.com/sawyer-shi)
-- **Email**: sawyer36@foxmail.com 【Currently looking for new job opportunities】
-- **License**: MIT License
+- **Email**: sawyer36@foxmail.com
+- **License**: Apache License 2.0
 - **Source Code**: https://github.com/sawyer-shi/dify-plugins-flow_map
 - **Support**: Through Dify platform, GitHub Issues, and email
 
 ## License Notice
 
-This project is licensed under the MIT License.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for the full license text.
 
 
 ---

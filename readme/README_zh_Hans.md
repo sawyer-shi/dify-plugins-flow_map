@@ -236,14 +236,14 @@ flow_map/
 ## 开发者信息
 
 - **作者**: [@sawyer-shi](https://github.com/sawyer-shi)
-- **邮箱**: sawyer36@foxmail.com 【正在寻找新的工作机会】
-- **许可证**: MIT License
+- **邮箱**: sawyer36@foxmail.com
+- **许可证**: Apache License 2.0
 - **源码地址**: https://github.com/sawyer-shi/dify-plugins-flow_map
 - **支持**: 通过Dify平台、GitHub Issues 和邮箱联系
 
 ## 许可证声明
 
-本项目采用 MIT License 许可证。
+本项目采用 Apache License 2.0 许可证。完整许可证文本请参见 [LICENSE](../LICENSE) 文件。
 
 ---
 
